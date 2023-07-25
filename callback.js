@@ -2,12 +2,12 @@ import ffi from '@tigerconnect/ffi-napi'
 import ref from '@tigerconnect/ref-napi'
 import logger from '@main/utils/logger'
 import { ipcMainSend } from '@main/utils/ipc-main'
-import { AsstMsg } from '@common/enum/callback'
+// import { AsstMsg } from '@common/enum/callback'
 
 const callbackHandle = ffi.Callback(
     'void',
     ['int', 'string', ref.refType(ref.types.void)],
-    (code: AsstMsg, data: string, customArgs) => {
+    (code, data, customArgs) => {
         logger.silly(code)
         logger.silly(data)
         ipcMainSend('renderer.CoreLoader:callback', {

@@ -24,9 +24,8 @@ const AsstPtrType = ref.refType(AsstType)
 const CustomArgsType = ref.refType(ref.types.void)
 const IntPointerType = ref.refType(IntType)
 const Buff = CustomArgsType
-type AsstInstancePtr = ref.Pointer<void>
 
-function createVoidPointer(): ref.Value<void> {
+function createVoidPointer() {
     return ref.alloc(ref.types.void)
 }
 
@@ -234,7 +233,7 @@ module.exports = function (RED) {
          * @param path? 未指定就用libPath
          * @returns
          */
-        function LoadResource(path?: string): Boolean {
+        function LoadResource(path) {
             return node.MeoAsstLib.AsstLoadResource(path ?? node.libPath)
         }
 
@@ -242,7 +241,7 @@ module.exports = function (RED) {
          * 创建普通实例, 即无回调版
          * @returns 实例指针{ref.Pointer}
          */
-        function Create(): boolean {
+        function Create() {
             node.MeoAsstPtr.placeholder = node.MeoAsstLib.AsstCreate()
             return !!node.MeoAsstPtr.placeholder
         }
@@ -255,10 +254,10 @@ module.exports = function (RED) {
          * @returns  是否创建成功
          */
         function CreateEx(
-            uuid: string,
-            callback: any = callbackHandle,
-            customArg: any = createVoidPointer()
-        ): boolean {
+            uuid,
+            callback = callbackHandle,
+            customArg = createVoidPointer()
+        ) {
             if (!node.MeoAsstPtr[uuid]) {
                 node.MeoAsstPtr[uuid] = node.MeoAsstLib.AsstCreateEx(callback, customArg)
                 return true
@@ -270,7 +269,7 @@ module.exports = function (RED) {
          * @description 摧毁实例
          * @param uuid 设备唯一标识符
          */
-        function Destroy(uuid): void {
+        function Destroy(uuid) {
             if (node.MeoAsstPtr[uuid]) {
                 node.MeoAsstLib.AsstDestroy(node.MeoAsstPtr[uuid])
                 // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
@@ -279,7 +278,7 @@ module.exports = function (RED) {
         }
 
         /** @deprecated 已废弃，将在接下来的版本中移除 */
-        function Connect(address: string, uuid: string, adbPath: string, config: string): boolean {
+        function Connect(address, uuid, adbPath, config) {
             return node.MeoAsstLib.AsstConnect(node.MeoAsstPtr[uuid], adbPath, address, config)
         }
 
@@ -292,7 +291,7 @@ module.exports = function (RED) {
          * @param block 是否阻塞
          * @returns 是否连接成功
          */
-        function AsyncConnect(address: string, uuid: string, adbPath: string, config: string, block: boolean = false): number {
+        function AsyncConnect(address, uuid, adbPath, config, block = false) {
             return node.MeoAsstLib.AsstAsyncConnect(node.MeoAsstPtr[uuid], adbPath, address, config, block)
         }
 
@@ -303,7 +302,7 @@ module.exports = function (RED) {
          * @param params 任务json字符串, 详见文档
          * @returns
          */
-        function AppendTask(uuid: string, type: string, params: string): number {
+        function AppendTask(uuid, type, params) {
             return node.MeoAsstLib.AsstAppendTask(GetCoreInstanceByUUID(uuid), type, params)
         }
 
@@ -314,7 +313,7 @@ module.exports = function (RED) {
          * @param params 任务参数
          */
 
-        function SetTaskParams(uuid: string, taskId: number, params: string): boolean {
+        function SetTaskParams(uuid, taskId, params) {
             return node.MeoAsstLib.AsstSetTaskParams(
                 GetCoreInstanceByUUID(uuid),
                 taskId,
@@ -327,7 +326,7 @@ module.exports = function (RED) {
          * @param uuid 设备唯一标识符
          * @returns 是否成功
          */
-        function Start(uuid: string): boolean {
+        function Start(uuid) {
             return node.MeoAsstLib.AsstStart(GetCoreInstanceByUUID(uuid))
         }
 
@@ -336,7 +335,7 @@ module.exports = function (RED) {
          * @param uuid 设备唯一标识符
          * @returns
          */
-        function Stop(uuid: string): boolean {
+        function Stop(uuid) {
             return node.MeoAsstLib.AsstStop(GetCoreInstanceByUUID(uuid))
         }
 
@@ -347,7 +346,7 @@ module.exports = function (RED) {
          * @param y y坐标
          * @returns
          */
-        function Click(uuid: string, x: number, y: number): boolean {
+        function Click(uuid, x, y) {
             return node.MeoAsstLib.AsstClick(GetCoreInstanceByUUID(uuid), x, y)
         }
 
@@ -357,12 +356,12 @@ module.exports = function (RED) {
          * @param block 阻塞
          * @returns
          */
-        function AsyncScreenCap(uuid: string, block: boolean = true): number | boolean {
+        function AsyncScreenCap(uuid, block = true) {
             if (!node.MeoAsstPtr[uuid]) return false
             return node.MeoAsstLib.AsstAsyncScreenCap(GetCoreInstanceByUUID(uuid), block)
         }
 
-        function GetImage(uuid: string): string {
+        function GetImage(uuid) {
             const buf = Buffer.alloc(5114514)
             // const len = node.MeoAsstLib.AsstGetImage(GetCoreInstanceByUUID(uuid), buf as any, buf.length)
             // const buf2 = buf.slice(0, len as number)
@@ -376,24 +375,24 @@ module.exports = function (RED) {
          * @description core版本
          * @returns 版本
          */
-        function GetCoreVersion(): string | null {
+        function GetCoreVersion() {
             if (!node.connected) return null
             return node.MeoAsstLib.AsstGetVersion()
         }
 
-        function GetCoreInstanceByUUID(uuid: string): AsstInstancePtr {
+        function GetCoreInstanceByUUID(uuid) {
             return node.MeoAsstPtr[uuid]
         }
 
-        function Log(level: string, message: string): void {
+        function Log(level, message) {
             return node.MeoAsstLib.AsstLog(level, message)
         }
 
-        function SetInstanceOption(uuid: string, key: InstanceOptionKey, value: string): boolean {
+        function SetInstanceOption(uuid, key, value) {
             return node.MeoAsstLib.AsstSetInstanceOption(GetCoreInstanceByUUID(uuid), key, value)
         }
 
-        function SetTouchMode(uuid: string, mode: TouchMode): boolean {
+        function SetTouchMode(uuid, mode) {
             if (!node.MeoAsstPtr[uuid]) {
                 return false
             }
@@ -405,7 +404,7 @@ module.exports = function (RED) {
          * @param mode TouchMode
          * @returns is all changes success
          */
-        function ChangeTouchMode(mode: TouchMode): boolean {
+        function ChangeTouchMode(mode) {
             for (const uuid in node.MeoAsstPtr) {
                 if (node.MeoAsstPtr[uuid]) {
                     const status = SetTouchMode(uuid, mode)
