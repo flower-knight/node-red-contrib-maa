@@ -1,0 +1,21 @@
+{
+  "maa": {
+    "label": {
+      "maaCore": "MaaCore",
+      "maaPath": "Maa路径",
+      "adbPath": "Adb路径"
+    },
+    "status": {
+      "badping": "Bad Ping",
+      "error": "Error",
+      "ok": "OK",
+      "notconnected": "not yet connected"
+    },
+    "errors": {
+      "notstring": "the query is not defined as a string",
+      "notconnected": "Database not connected",
+      "notconfigured": "MySQL database not configured"
+    },
+    "tip": "Tip: 如果在容器化方式运行，路径一定要填容器内的路径"
+  }
+}
