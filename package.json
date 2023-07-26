@@ -12,7 +12,7 @@
   },
   "node-red": {
     "nodes": {
-      "maa": "node-red-contrib-maa/maa.js"
+      "maa": "maa4node-red/maa.js"
     }
   },
   "keywords": [
