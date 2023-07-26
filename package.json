@@ -6,13 +6,13 @@
     "@tigerconnect/ffi-napi": "4.0.3-tc3",
     "@tigerconnect/ref-napi": "4.0.0-tc8"
   },
-  "main": "maa.js",
+  "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "node-red": {
     "nodes": {
-      "maa": "maa.js"
+      "maa": "node-red-contrib-maa/maa.js"
     }
   },
   "keywords": [
@@ -20,8 +20,5 @@
     "maa"
   ],
   "author": "luohaonan",
-  "license": "ISC",
-  "devDependencies": {
-    "ref-napi": "^3.0.3"
-  }
+  "license": "ISC"
 }

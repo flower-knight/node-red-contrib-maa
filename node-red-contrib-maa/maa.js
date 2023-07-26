@@ -1,7 +1,7 @@
 const ffi = require("@tigerconnect/ffi-napi")
 const ref = require("@tigerconnect/ref-napi")
 const path = require("path");
-const callbackHandle = require("./callback")
+// const callbackHandle = require("./callback")
 /*import ffi, {DynamicLibrary} from "@tigerconnect/ffi-napi";
 import ref from "@tigerconnect/ref-napi"
 import * as path from "path";
@@ -250,24 +250,24 @@ module.exports = function (RED) {
             return !!node.MeoAsstPtr.placeholder
         }
 
-        /**
-         * @description 创建实例
-         * @param uuid 设备唯一标识符
-         * @param callback 回调函数
-         * @param customArg 自定义参数{???}
-         * @returns  是否创建成功
-         */
-        function CreateEx(
-            uuid,
-            callback = callbackHandle,
-            customArg = createVoidPointer()
-        ) {
-            if (!node.MeoAsstPtr[uuid]) {
-                node.MeoAsstPtr[uuid] = node.MeoAsstLib.AsstCreateEx(callback, customArg)
-                return true
-            }
-            return false // 重复创建
-        }
+        // /**
+        //  * @description 创建实例
+        //  * @param uuid 设备唯一标识符
+        //  * @param callback 回调函数
+        //  * @param customArg 自定义参数{???}
+        //  * @returns  是否创建成功
+        //  */
+        // function CreateEx(
+        //     uuid,
+        //     callback = callbackHandle,
+        //     customArg = createVoidPointer()
+        // ) {
+        //     if (!node.MeoAsstPtr[uuid]) {
+        //         node.MeoAsstPtr[uuid] = node.MeoAsstLib.AsstCreateEx(callback, customArg)
+        //         return true
+        //     }
+        //     return false // 重复创建
+        // }
 
         /**
          * @description 摧毁实例
