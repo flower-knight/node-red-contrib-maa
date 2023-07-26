@@ -1,0 +1,73 @@
+<script type="text/html" data-template-name="maaCore">
+    <div class="form-row">
+        <label for="node-config-input-host"><i class="fa fa-globe"></i> <span data-i18n="mysql.label.host"></span></label>
+        <input type="text" id="node-config-input-host">
+    </div>
+<!--    <div class="form-row">-->
+<!--        <label for="node-config-input-port"><i class="fa fa-random"></i> <span data-i18n="mysql.label.port"></span></label>-->
+<!--        <input type="text" id="node-config-input-port">-->
+<!--    </div>-->
+<!--    <div class="form-row">-->
+<!--        <label for="node-config-input-user"><i class="fa fa-user"></i> <span data-i18n="mysql.label.user"></span></label>-->
+<!--        <input type="text" id="node-config-input-user">-->
+<!--    </div>-->
+<!--    <div class="form-row">-->
+<!--        <label for="node-config-input-password"><i class="fa fa-lock"></i> <span data-i18n="mysql.label.password"></span></label>-->
+<!--        <input type="password" id="node-config-input-password">-->
+<!--    </div>-->
+    <div class="form-row">
+        <label for="node-config-input-name"><i class="fa fa-tag"></i> <span data-i18n="node-red:common.label.name"></span></label>
+        <input type="text" id="node-config-input-name" data-i18n="[placeholder]node-red:common.label.name">
+    </div>
+<!--    <div class="form-tips"><span data-i18n="[html]mysql.tip"></span></div>-->
+</script>
+
+<script type="text/javascript">
+    RED.nodes.registerType('maaCore',{
+        category: 'config',
+        defaults: {
+            maaPath: {value:""},
+            adbPath: {value:"127.0.0.1:5555",required:true}
+            // port: {value:"5555",required:true}
+        },
+        // credentials: {
+        //     user: {type: "text"},
+        //     password: {type: "password"}
+        // },
+        label: function() {
+            return this.name || this.db;
+        }
+    });
+</script>
+
+<script type="text/html" data-template-name="maa">
+    <div class="form-row">
+        <label for="node-input-maaCore"><i class="fa fa-database"></i> <span data-i18n="maa.label.maaCore"></span></label>
+        <input type="text" id="node-input-maaCore">
+    </div>
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> <span data-i18n="node-red:common.label.name"></span></label>
+        <input type="text" id="node-input-name" data-i18n="[placeholder]node-red:common.label.name">
+    </div>
+</script>
+
+<script type="text/javascript">
+    RED.nodes.registerType('maa',{
+        category: 'storage-input',
+        color:"#e97b00",
+        defaults: {
+            maaCore: {type:"maaCore",required:true},
+            name: {value:""}
+        },
+        inputs:1,
+        outputs:1,
+        icon: "db.png",
+        label: function() {
+            var levelNode = RED.nodes.node(this.host);
+            return this.name||(levelNode?levelNode.label():"maa");
+        },
+        labelStyle: function() {
+            return this.name?"node_label_italic":"";
+        }
+    });
+</script>

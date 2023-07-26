@@ -1,10 +1,14 @@
-import ffi, {DynamicLibrary} from "@tigerconnect/ffi-napi";
+const ffi = require("@tigerconnect/ffi-napi")
+const ref = require("@tigerconnect/ref-napi")
+const path = require("path");
+const callbackHandle = require("./callback")
+/*import ffi, {DynamicLibrary} from "@tigerconnect/ffi-napi";
 import ref from "@tigerconnect/ref-napi"
 import * as path from "path";
 import callbackHandle from './callback'
 // import { InstanceOptionKey } from '@main/../common/enum/core'
 import {InstanceOptionKey} from './settings'
-import {TouchMode} from './settings'
+import {TouchMode} from './settings'*/
 
 /** Some types for core */
 const BoolType = ref.types.bool
@@ -31,14 +35,14 @@ function createVoidPointer() {
 
 
 module.exports = function (RED) {
-    var reconnect = RED.settings.mysqlReconnectTime || 20000;
+    var reconnect = RED.settings.maaReconnectTime || 20000;
 
     function MaaNode(config) {
         RED.nodes.createNode(this, config);
         const node = this;
         this.adbPath = config.adbPath
         this.maaPath = config.maaPath
-        this.host = config.host
+        // this.host = config.host
         this.libPath = config.libPath
         this.DepLibs = []
         this.MeoAsstPtr = {}
@@ -419,11 +423,128 @@ module.exports = function (RED) {
     }
 
     RED.nodes.registerType("maaCore", MaaNode, {
-        credentials: {
-            user: {type: "text"},
-            password: {type: "password"}
+        defaults: {
+            maaPath: {value: ""},
+            adbPath: {value: "127.0.0.1:5555", required: true}
+            // port: {value:"5555",required:true}
         }
+        // credentials: {
+        //     user: {type: "text"},
+        //     password: {type: "password"}
+        // }
     });
+
+    function MaaNodeIn(config) {
+        RED.nodes.createNode(this, config);
+        this.maaCore = config.maaCore;
+        this.maaCoreConfig = RED.nodes.getNode(this.maaCore);
+        this.status({});
+
+        if (this.maaCoreConfig) {
+            this.maaCoreConfig.connect();
+            var node = this;
+            var busy = false;
+            var status = {};
+            node.maaCoreConfig.on("state", function (info) {
+                if (info === "connecting") {
+                    node.status({fill: "grey", shape: "ring", text: info});
+                } else if (info === "connected") {
+                    node.status({fill: "green", shape: "dot", text: info});
+                } else {
+                    node.status({fill: "red", shape: "ring", text: info});
+                }
+            });
+
+            node.on("input", function (msg, send, done) {
+                send = send || function () {
+                    node.send.apply(node, arguments)
+                };
+                if (node.maaCoreConfig.connected) {
+                    if (typeof msg.topic === 'string') {
+                        //console.log("query:",msg.topic);
+                        node.maaCoreConfig.pool.getConnection(function (err, conn) {
+                            if (err) {
+                                if (conn) {
+                                    conn.release()
+                                }
+                                status = {
+                                    fill: "red",
+                                    shape: "ring",
+                                    text: RED._("maa.status.error") + ": " + err.code
+                                };
+                                node.status(status);
+                                node.error(err, msg);
+                                if (done) {
+                                    done();
+                                }
+                                return
+                            }
+
+                            var bind = [];
+                            if (Array.isArray(msg.payload)) {
+                                bind = msg.payload;
+                            } else if (typeof msg.payload === 'object' && msg.payload !== null) {
+                                bind = msg.payload;
+                            }
+                            conn.config.queryFormat = Array.isArray(msg.payload) ? null : customQueryFormat
+                            conn.query(msg.topic, bind, function (err, rows) {
+                                conn.release()
+                                if (err) {
+                                    status = {
+                                        fill: "red",
+                                        shape: "ring",
+                                        text: RED._("maa.status.error") + ": " + err.code
+                                    };
+                                    node.status(status);
+                                    node.error(err, msg);
+                                } else {
+                                    msg.payload = rows;
+                                    send(msg);
+                                    status = {fill: "green", shape: "dot", text: RED._("maa.status.ok")};
+                                    node.status(status);
+                                }
+                                if (done) {
+                                    done();
+                                }
+                            });
+                        })
+
+                    } else {
+                        if (typeof msg.topic !== 'string') {
+                            node.error("msg.topic : " + RED._("maa.errors.notstring"));
+                            done();
+                        }
+                    }
+                } else {
+                    node.error(RED._("maa.errors.notconnected"), msg);
+                    status = {fill: "red", shape: "ring", text: RED._("maa.status.notconnected")};
+                    if (done) {
+                        done();
+                    }
+                }
+                if (!busy) {
+                    busy = true;
+                    node.status(status);
+                    node.tout = setTimeout(function () {
+                        busy = false;
+                        node.status(status);
+                    }, 500);
+                }
+            });
+
+            node.on('close', function () {
+                if (node.tout) {
+                    clearTimeout(node.tout);
+                }
+                node.maaCoreConfig.removeAllListeners();
+                node.status({});
+            });
+        } else {
+            this.error(RED._("maa.errors.notconfigured"));
+        }
+    }
+
+    RED.nodes.registerType("maa", MaaNodeIn);
 
 
 }
