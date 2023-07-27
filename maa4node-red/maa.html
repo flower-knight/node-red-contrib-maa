@@ -19,7 +19,7 @@
         <label for="node-config-input-name"><i class="fa fa-tag"></i> <span data-i18n="node-red:common.label.name"></span></label>
         <input type="text" id="node-config-input-name" data-i18n="[placeholder]node-red:common.label.name">
     </div>
-    <!--    <div class="form-tips"><span data-i18n="[html]mysql.tip"></span></div>-->
+        <div class="form-tips"><span data-i18n="[html]maa.tip"></span></div>
 </script>
 
 <script type="text/javascript">
@@ -58,7 +58,8 @@
     RED.nodes.registerType('maa', {
         category: 'storage-input',
         // color:"#e97b00",
-        color: "#4ccee4",
+        // color: "#4ccee4",
+        color: "#263959",
         defaults: {
             maaCore: {type: "maaCore", required: true},
             name: {value: ""}
@@ -67,7 +68,7 @@
         outputs: 1,
         icon: "maa.png",
         label: function () {
-            var levelNode = RED.nodes.node(this.host);
+            var levelNode = RED.nodes.node(this.maaCore);
             return this.name || (levelNode ? levelNode.label() : "maa");
         },
         labelStyle: function () {

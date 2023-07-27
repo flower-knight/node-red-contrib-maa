@@ -35,7 +35,7 @@ function createVoidPointer() {
 
 
 module.exports = function (RED) {
-    var reconnect = RED.settings.maaReconnectTime || 20000;
+    var reload = RED.settings.maaReloadTime || 20000;
 
     function MaaNode(config) {
         RED.nodes.createNode(this, config);
@@ -43,161 +43,155 @@ module.exports = function (RED) {
         this.adbPath = config.adbPath
         this.maaPath = config.maaPath
         // this.host = config.host
-        this.libPath = config.libPath
+        this.libPath = config.maaPath
         this.DepLibs = []
         this.MeoAsstPtr = {}
-        this.connecting = false;
-        this.connected = false;
+        this.loading = false;
+        this.loaded = false;
         this.dependences = {
-            win32: [
-                'opencv_world4_maa.dll',
-                'onnxruntime_maa.dll',
-                'MaaDerpLearning.dll'
-            ],
-            linux: [
-                'libiomp5.so',
-                'libmklml_intel.so',
-                'libmkldnn.so'
-            ],
-            darwin: ['libpaddle_inference.dylib']
+            win32: ['opencv_world4_maa.dll', 'onnxruntime_maa.dll', 'MaaDerpLearning.dll'],
+            linux: ['libopencv_world4.so.407', 'libonnxruntime.so.1.14.1', 'libMaaDerpLearning.so'],
+            darwin: ['libopencv_world4.dylib', 'libonnxruntime.dylib', 'libMaaDerpLearning.dylib'],
         }
         this.libName = {
             win32: 'MaaCore.dll',
-            darwin: 'MeoAssistant.dylib',
-            linux: 'libMeoAssistant.so'
+            darwin: 'libMaaCore.dylib',
+            linux: 'libMaaCore.so',
         }
 
 
         function load() {
             try {
-                node.connecting = true;
-                node.emit("state", "connecting")
-                node.dependences[process.platform].forEach((lib) => {
-                    node.DepLibs.push(ffi.DynamicLibrary(path.join(node.libPath, lib)))
-                })
-                node.DLib = ffi.DynamicLibrary(path.join(node.libPath, node.libName[process.platform]), ffi.RTLD_NOW)
-                node.MeoAsstLib = {
-                    AsstSetUserDir: ffi.ForeignFunction(node.DLib.get('AsstSetUserDir'),
-                        BoolType,
-                        [StringType],
-                        ffi.FFI_STDCALL),
+                node.loading = true;
+                node.emit("state", "loading")
+                if (!node.MeoAsstLib) {
+                    node.dependences[process.platform].forEach((lib) => {
+                        node.DepLibs.push(ffi.DynamicLibrary(path.join(node.libPath, lib)))
+                    })
+                    node.DLib = ffi.DynamicLibrary(path.join(node.libPath, node.libName[process.platform]), ffi.RTLD_NOW)
+                    node.MeoAsstLib = {
+                        AsstSetUserDir: ffi.ForeignFunction(node.DLib.get('AsstSetUserDir'),
+                            BoolType,
+                            [StringType],
+                            ffi.FFI_STDCALL),
 
-                    AsstLoadResource: ffi.ForeignFunction(node.DLib.get('AsstLoadResource'),
-                        BoolType,
-                        [StringType],
-                        ffi.FFI_STDCALL),
+                        AsstLoadResource: ffi.ForeignFunction(node.DLib.get('AsstLoadResource'),
+                            BoolType,
+                            [StringType],
+                            ffi.FFI_STDCALL),
 
-                    AsstSetStaticOption: ffi.ForeignFunction(node.DLib.get('AsstSetStaticOption'),
-                        BoolType,
-                        [IntType, StringType],
-                        ffi.FFI_STDCALL),
+                        AsstSetStaticOption: ffi.ForeignFunction(node.DLib.get('AsstSetStaticOption'),
+                            BoolType,
+                            [IntType, StringType],
+                            ffi.FFI_STDCALL),
 
-                    AsstCreate: ffi.ForeignFunction(node.DLib.get('AsstCreate'),
-                        AsstPtrType,
-                        [],
-                        ffi.FFI_STDCALL),
+                        AsstCreate: ffi.ForeignFunction(node.DLib.get('AsstCreate'),
+                            AsstPtrType,
+                            [],
+                            ffi.FFI_STDCALL),
 
-                    AsstCreateEx: ffi.ForeignFunction(node.DLib.get('AsstCreateEx'),
-                        AsstPtrType,
-                        ['pointer', CustomArgsType],
-                        ffi.FFI_STDCALL),
+                        AsstCreateEx: ffi.ForeignFunction(node.DLib.get('AsstCreateEx'),
+                            AsstPtrType,
+                            ['pointer', CustomArgsType],
+                            ffi.FFI_STDCALL),
 
-                    AsstDestroy: ffi.ForeignFunction(node.DLib.get('AsstDestroy'),
-                        VoidType,
-                        [AsstPtrType],
-                        ffi.FFI_STDCALL),
+                        AsstDestroy: ffi.ForeignFunction(node.DLib.get('AsstDestroy'),
+                            VoidType,
+                            [AsstPtrType],
+                            ffi.FFI_STDCALL),
 
-                    AsstSetInstanceOption: ffi.ForeignFunction(node.DLib.get('AsstSetInstanceOption'),
-                        BoolType,
-                        [AsstPtrType, IntType, StringType],
-                        ffi.FFI_STDCALL),
+                        AsstSetInstanceOption: ffi.ForeignFunction(node.DLib.get('AsstSetInstanceOption'),
+                            BoolType,
+                            [AsstPtrType, IntType, StringType],
+                            ffi.FFI_STDCALL),
 
-                    AsstConnect: ffi.ForeignFunction(node.DLib.get('AsstConnect'),
-                        BoolType,
-                        [AsstPtrType, StringType, StringType, StringType],
-                        ffi.FFI_STDCALL),
+                        AsstConnect: ffi.ForeignFunction(node.DLib.get('AsstConnect'),
+                            BoolType,
+                            [AsstPtrType, StringType, StringType, StringType],
+                            ffi.FFI_STDCALL),
 
-                    AsstAppendTask: ffi.ForeignFunction(node.DLib.get('AsstAppendTask'),
-                        IntType,
-                        [AsstPtrType, StringType, StringType],
-                        ffi.FFI_STDCALL),
+                        AsstAppendTask: ffi.ForeignFunction(node.DLib.get('AsstAppendTask'),
+                            IntType,
+                            [AsstPtrType, StringType, StringType],
+                            ffi.FFI_STDCALL),
 
-                    AsstSetTaskParams: ffi.ForeignFunction(node.DLib.get('AsstSetTaskParams'),
-                        BoolType,
-                        [AsstPtrType, IntType, StringType],
-                        ffi.FFI_STDCALL),
+                        AsstSetTaskParams: ffi.ForeignFunction(node.DLib.get('AsstSetTaskParams'),
+                            BoolType,
+                            [AsstPtrType, IntType, StringType],
+                            ffi.FFI_STDCALL),
 
-                    AsstStart: ffi.ForeignFunction(node.DLib.get('AsstStart'),
-                        BoolType,
-                        [AsstPtrType],
-                        ffi.FFI_STDCALL),
+                        AsstStart: ffi.ForeignFunction(node.DLib.get('AsstStart'),
+                            BoolType,
+                            [AsstPtrType],
+                            ffi.FFI_STDCALL),
 
-                    AsstStop: ffi.ForeignFunction(node.DLib.get('AsstStop'),
-                        BoolType,
-                        [AsstPtrType],
-                        ffi.FFI_STDCALL),
+                        AsstStop: ffi.ForeignFunction(node.DLib.get('AsstStop'),
+                            BoolType,
+                            [AsstPtrType],
+                            ffi.FFI_STDCALL),
 
-                    AsstRunning: ffi.ForeignFunction(node.DLib.get('AsstRunning'),
-                        BoolType,
-                        [AsstPtrType],
-                        ffi.FFI_STDCALL),
+                        AsstRunning: ffi.ForeignFunction(node.DLib.get('AsstRunning'),
+                            BoolType,
+                            [AsstPtrType],
+                            ffi.FFI_STDCALL),
 
-                    AsstAsyncConnect: ffi.ForeignFunction(node.DLib.get('AsstAsyncConnect'),
-                        AsstAsyncCallIdType,
-                        [AsstPtrType, StringType, StringType, StringType, BoolType],
-                        ffi.FFI_STDCALL),
+                        AsstAsyncConnect: ffi.ForeignFunction(node.DLib.get('AsstAsyncConnect'),
+                            AsstAsyncCallIdType,
+                            [AsstPtrType, StringType, StringType, StringType, BoolType],
+                            ffi.FFI_STDCALL),
 
-                    AsstAsyncClick: ffi.ForeignFunction(node.DLib.get('AsstAsyncClick'),
-                        AsstAsyncCallIdType,
-                        [AsstPtrType, IntType, IntType, BoolType],
-                        ffi.FFI_STDCALL),
+                        AsstAsyncClick: ffi.ForeignFunction(node.DLib.get('AsstAsyncClick'),
+                            AsstAsyncCallIdType,
+                            [AsstPtrType, IntType, IntType, BoolType],
+                            ffi.FFI_STDCALL),
 
-                    AsstAsyncScreenCap: ffi.ForeignFunction(node.DLib.get('AsstAsyncScreencap'),
-                        AsstAsyncCallIdType,
-                        [AsstPtrType, BoolType],
-                        ffi.FFI_STDCALL),
+                        AsstAsyncScreenCap: ffi.ForeignFunction(node.DLib.get('AsstAsyncScreencap'),
+                            AsstAsyncCallIdType,
+                            [AsstPtrType, BoolType],
+                            ffi.FFI_STDCALL),
 
-                    AsstGetImage: ffi.ForeignFunction(node.DLib.get('AsstGetImage'),
-                        ULLType,
-                        [AsstPtrType, Buff, ULLType],
-                        ffi.FFI_STDCALL),
+                        AsstGetImage: ffi.ForeignFunction(node.DLib.get('AsstGetImage'),
+                            ULLType,
+                            [AsstPtrType, Buff, ULLType],
+                            ffi.FFI_STDCALL),
 
-                    AsstGetUUID: ffi.ForeignFunction(node.DLib.get('AsstGetUUID'),
-                        ULLType,
-                        [AsstPtrType, StringType, ULLType],
-                        ffi.FFI_STDCALL),
+                        AsstGetUUID: ffi.ForeignFunction(node.DLib.get('AsstGetUUID'),
+                            ULLType,
+                            [AsstPtrType, StringType, ULLType],
+                            ffi.FFI_STDCALL),
 
-                    AsstGetTasksList: ffi.ForeignFunction(node.DLib.get('AsstGetTasksList'),
-                        ULLType,
-                        [AsstPtrType, IntPointerType, ULLType],
-                        ffi.FFI_STDCALL),
+                        AsstGetTasksList: ffi.ForeignFunction(node.DLib.get('AsstGetTasksList'),
+                            ULLType,
+                            [AsstPtrType, IntPointerType, ULLType],
+                            ffi.FFI_STDCALL),
 
-                    AsstGetNullSize: ffi.ForeignFunction(node.DLib.get('AsstGetNullSize'),
-                        ULLType,
-                        [],
-                        ffi.FFI_STDCALL),
+                        AsstGetNullSize: ffi.ForeignFunction(node.DLib.get('AsstGetNullSize'),
+                            ULLType,
+                            [],
+                            ffi.FFI_STDCALL),
 
-                    AsstGetVersion: ffi.ForeignFunction(node.DLib.get('AsstGetVersion'),
-                        StringType,
-                        [],
-                        ffi.FFI_STDCALL),
+                        AsstGetVersion: ffi.ForeignFunction(node.DLib.get('AsstGetVersion'),
+                            StringType,
+                            [],
+                            ffi.FFI_STDCALL),
 
-                    AsstLog: ffi.ForeignFunction(node.DLib.get('AsstLog'),
-                        VoidType,
-                        [StringType, StringType],
-                        ffi.FFI_STDCALL)
+                        AsstLog: ffi.ForeignFunction(node.DLib.get('AsstLog'),
+                            VoidType,
+                            [StringType, StringType],
+                            ffi.FFI_STDCALL)
+                    }
                 }
                 const version = GetCoreVersion()
                 if (version) {
-                    node.error("maaCore connect failed")
-                    node.status({fill: "red", shape: "ring", text: RED._("maaCore.status.badping")});
-                    node.tick = setTimeout(load, reconnect)
-                } else {
-                    node.connected = true;
-                    node.emit("state", "connected");
+                    node.loaded = true;
+                    node.emit("state", "loaded");
                     if (!node.check) {
-                        node.check = setInterval(version, 290000);
+                        node.check = setInterval(GetCoreVersion, 290000);
                     }
+                } else {
+                    node.error("maaCore load failed")
+                    node.status({fill: "red", shape: "ring", text: RED._("maaCore.status.badping")});
+                    node.tick = setTimeout(load, reload)
                 }
             } catch (err) {
                 node.error(err)
@@ -206,8 +200,8 @@ module.exports = function (RED) {
             }
         }
 
-        node.connect = function () {
-            if (!node.connected && !node.connecting) {
+        node.load = function () {
+            if (!node.loaded && !node.loading) {
                 load();
             }
         }
@@ -221,8 +215,8 @@ module.exports = function (RED) {
             }
             // node.connection.release();
             node.emit("state", " ");
-            if (node.connected) {
-                node.connected = false;
+            if (node.loaded) {
+                node.loaded = false;
                 Destroy();
                 done();
             } else {
@@ -380,7 +374,7 @@ module.exports = function (RED) {
          * @returns 版本
          */
         function GetCoreVersion() {
-            if (!node.connected) return null
+            if (!node.loading) return null
             return node.MeoAsstLib.AsstGetVersion()
         }
 
@@ -425,7 +419,7 @@ module.exports = function (RED) {
     RED.nodes.registerType("maaCore", MaaNode, {
         defaults: {
             maaPath: {value: ""},
-            adbPath: {value: "127.0.0.1:5555", required: true}
+            adbPath: {value: "", required: true}
             // port: {value:"5555",required:true}
         }
         // credentials: {
@@ -441,14 +435,14 @@ module.exports = function (RED) {
         this.status({});
 
         if (this.maaCoreConfig) {
-            this.maaCoreConfig.connect();
+            this.maaCoreConfig.load();
             var node = this;
             var busy = false;
             var status = {};
             node.maaCoreConfig.on("state", function (info) {
-                if (info === "connecting") {
+                if (info === "loading") {
                     node.status({fill: "grey", shape: "ring", text: info});
-                } else if (info === "connected") {
+                } else if (info === "loaded") {
                     node.status({fill: "green", shape: "dot", text: info});
                 } else {
                     node.status({fill: "red", shape: "ring", text: info});
@@ -459,55 +453,55 @@ module.exports = function (RED) {
                 send = send || function () {
                     node.send.apply(node, arguments)
                 };
-                if (node.maaCoreConfig.connected) {
+                if (node.maaCoreConfig.loaded) {
                     if (typeof msg.topic === 'string') {
                         //console.log("query:",msg.topic);
-                        node.maaCoreConfig.pool.getConnection(function (err, conn) {
-                            if (err) {
-                                if (conn) {
-                                    conn.release()
-                                }
-                                status = {
-                                    fill: "red",
-                                    shape: "ring",
-                                    text: RED._("maa.status.error") + ": " + err.code
-                                };
-                                node.status(status);
-                                node.error(err, msg);
-                                if (done) {
-                                    done();
-                                }
-                                return
-                            }
-
-                            var bind = [];
-                            if (Array.isArray(msg.payload)) {
-                                bind = msg.payload;
-                            } else if (typeof msg.payload === 'object' && msg.payload !== null) {
-                                bind = msg.payload;
-                            }
-                            conn.config.queryFormat = Array.isArray(msg.payload) ? null : customQueryFormat
-                            conn.query(msg.topic, bind, function (err, rows) {
-                                conn.release()
-                                if (err) {
-                                    status = {
-                                        fill: "red",
-                                        shape: "ring",
-                                        text: RED._("maa.status.error") + ": " + err.code
-                                    };
-                                    node.status(status);
-                                    node.error(err, msg);
-                                } else {
-                                    msg.payload = rows;
-                                    send(msg);
-                                    status = {fill: "green", shape: "dot", text: RED._("maa.status.ok")};
-                                    node.status(status);
-                                }
-                                if (done) {
-                                    done();
-                                }
-                            });
-                        })
+                        // node.maaCoreConfig.pool.getConnection(function (err, conn) {
+                        //     if (err) {
+                        //         if (conn) {
+                        //             conn.release()
+                        //         }
+                        //         status = {
+                        //             fill: "red",
+                        //             shape: "ring",
+                        //             text: RED._("maa.status.error") + ": " + err.code
+                        //         };
+                        //         node.status(status);
+                        //         node.error(err, msg);
+                        //         if (done) {
+                        //             done();
+                        //         }
+                        //         return
+                        //     }
+                        //
+                        //     var bind = [];
+                        //     if (Array.isArray(msg.payload)) {
+                        //         bind = msg.payload;
+                        //     } else if (typeof msg.payload === 'object' && msg.payload !== null) {
+                        //         bind = msg.payload;
+                        //     }
+                        //     conn.config.queryFormat = Array.isArray(msg.payload) ? null : customQueryFormat
+                        //     conn.query(msg.topic, bind, function (err, rows) {
+                        //         conn.release()
+                        //         if (err) {
+                        //             status = {
+                        //                 fill: "red",
+                        //                 shape: "ring",
+                        //                 text: RED._("maa.status.error") + ": " + err.code
+                        //             };
+                        //             node.status(status);
+                        //             node.error(err, msg);
+                        //         } else {
+                        //             msg.payload = rows;
+                        //             send(msg);
+                        //             status = {fill: "green", shape: "dot", text: RED._("maa.status.ok")};
+                        //             node.status(status);
+                        //         }
+                        //         if (done) {
+                        //             done();
+                        //         }
+                        //     });
+                        // })
 
                     } else {
                         if (typeof msg.topic !== 'string') {
