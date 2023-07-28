@@ -60,7 +60,7 @@ module.exports = function (RED) {
         }
 
 
-        function load() {
+        async function load() {
             try {
                 node.loading = true;
                 node.emit("state", "loading")
@@ -181,12 +181,12 @@ module.exports = function (RED) {
                             ffi.FFI_STDCALL)
                     }
                 }
-                const version = GetCoreVersion()
-                if (version) {
-                    node.loaded = true;
+                node.loading = false;
+                node.loaded = true;
+                if (await stateCheck()) {
                     node.emit("state", "loaded");
                     if (!node.check) {
-                        node.check = setInterval(GetCoreVersion, 290000);
+                        node.check = setInterval(stateCheck, 290000);
                     }
                 } else {
                     node.error("maaCore load failed")
@@ -225,6 +225,24 @@ module.exports = function (RED) {
             }
 
         });
+
+        /**
+         * 一个异步调用
+         * @returns {Promise<unknown>}
+         */
+        async function stateCheck() {
+            return new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    const version = GetCoreVersion()
+                    if (version) {
+                        resolve(version)
+                    } else {
+                        reject(null)
+                    }
+                })
+            })
+
+        }
 
         /**
          * 指定资源路径
@@ -374,7 +392,7 @@ module.exports = function (RED) {
          * @returns 版本
          */
         function GetCoreVersion() {
-            if (!node.loading) return null
+            if (!node.loaded) return null
             return node.MeoAsstLib.AsstGetVersion()
         }
 
