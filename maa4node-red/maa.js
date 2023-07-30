@@ -1,6 +1,7 @@
 const ffi = require("@tigerconnect/ffi-napi")
 const ref = require("@tigerconnect/ref-napi")
 const path = require("path");
+const cryoto = require("crypto")
 // const callbackHandle = require("./callback")
 /*import ffi, {DynamicLibrary} from "@tigerconnect/ffi-napi";
 import ref from "@tigerconnect/ref-napi"
@@ -233,7 +234,7 @@ module.exports = function (RED) {
         async function stateCheck() {
             return new Promise((resolve, reject) => {
                 setTimeout(() => {
-                    const version = GetCoreVersion()
+                    const version = node.GetCoreVersion()
                     if (version) {
                         resolve(version)
                     } else {
@@ -257,9 +258,14 @@ module.exports = function (RED) {
          * 创建普通实例, 即无回调版
          * @returns 实例指针{ref.Pointer}
          */
-        function Create() {
-            node.MeoAsstPtr.placeholder = node.MeoAsstLib.AsstCreate()
-            return !!node.MeoAsstPtr.placeholder
+        node.Create = function (uuid) {
+            // node.MeoAsstPtr.placeholder = node.MeoAsstLib.AsstCreate()
+            // return !!node.MeoAsstPtr.placeholder
+            if (!node.MeoAsstPtr[uuid]) {
+                node.MeoAsstPtr[uuid] = node.MeoAsstLib.AsstCreate()
+                return true
+            }
+            return false
         }
 
         // /**
@@ -294,7 +300,7 @@ module.exports = function (RED) {
         }
 
         /** @deprecated 已废弃，将在接下来的版本中移除 */
-        function Connect(address, uuid, adbPath, config) {
+        node.Connect = function (uuid, adbPath, address, config) {
             return node.MeoAsstLib.AsstConnect(node.MeoAsstPtr[uuid], adbPath, address, config)
         }
 
@@ -307,7 +313,7 @@ module.exports = function (RED) {
          * @param block 是否阻塞
          * @returns 是否连接成功
          */
-        function AsyncConnect(address, uuid, adbPath, config, block = false) {
+        node.AsyncConnect = function (uuid, adbPath, address, config, block = false) {
             return node.MeoAsstLib.AsstAsyncConnect(node.MeoAsstPtr[uuid], adbPath, address, config, block)
         }
 
@@ -318,7 +324,7 @@ module.exports = function (RED) {
          * @param params 任务json字符串, 详见文档
          * @returns
          */
-        function AppendTask(uuid, type, params) {
+        node.AppendTask = function (uuid, type, params) {
             return node.MeoAsstLib.AsstAppendTask(GetCoreInstanceByUUID(uuid), type, params)
         }
 
@@ -329,7 +335,7 @@ module.exports = function (RED) {
          * @param params 任务参数
          */
 
-        function SetTaskParams(uuid, taskId, params) {
+        node.SetTaskParams = function (uuid, taskId, params) {
             return node.MeoAsstLib.AsstSetTaskParams(
                 GetCoreInstanceByUUID(uuid),
                 taskId,
@@ -342,7 +348,7 @@ module.exports = function (RED) {
          * @param uuid 设备唯一标识符
          * @returns 是否成功
          */
-        function Start(uuid) {
+        node.Start = function (uuid) {
             return node.MeoAsstLib.AsstStart(GetCoreInstanceByUUID(uuid))
         }
 
@@ -351,7 +357,7 @@ module.exports = function (RED) {
          * @param uuid 设备唯一标识符
          * @returns
          */
-        function Stop(uuid) {
+        node.Stop = function (uuid) {
             return node.MeoAsstLib.AsstStop(GetCoreInstanceByUUID(uuid))
         }
 
@@ -362,7 +368,7 @@ module.exports = function (RED) {
          * @param y y坐标
          * @returns
          */
-        function Click(uuid, x, y) {
+        node.Click = function (uuid, x, y) {
             return node.MeoAsstLib.AsstClick(GetCoreInstanceByUUID(uuid), x, y)
         }
 
@@ -391,12 +397,12 @@ module.exports = function (RED) {
          * @description core版本
          * @returns 版本
          */
-        function GetCoreVersion() {
+        node.GetCoreVersion = function () {
             if (!node.loaded) return null
             return node.MeoAsstLib.AsstGetVersion()
         }
 
-        function GetCoreInstanceByUUID(uuid) {
+        node.GetCoreInstanceByUUID = function (uuid) {
             return node.MeoAsstPtr[uuid]
         }
 
@@ -404,15 +410,15 @@ module.exports = function (RED) {
             return node.MeoAsstLib.AsstLog(level, message)
         }
 
-        function SetInstanceOption(uuid, key, value) {
+        node.SetInstanceOption = function (uuid, key, value) {
             return node.MeoAsstLib.AsstSetInstanceOption(GetCoreInstanceByUUID(uuid), key, value)
         }
 
-        function SetTouchMode(uuid, mode) {
+        node.SetTouchMode = function (uuid, mode) {
             if (!node.MeoAsstPtr[uuid]) {
                 return false
             }
-            return SetInstanceOption(uuid, InstanceOptionKey.TouchMode, mode)
+            return node.SetInstanceOption(uuid, InstanceOptionKey.TouchMode, mode)
         }
 
         /**
@@ -450,13 +456,15 @@ module.exports = function (RED) {
         RED.nodes.createNode(this, config);
         this.maaCore = config.maaCore;
         this.maaCoreConfig = RED.nodes.getNode(this.maaCore);
+        // let instance =this.maaCoreConfig.MeoAsstLib
         this.status({});
 
         if (this.maaCoreConfig) {
             this.maaCoreConfig.load();
-            var node = this;
-            var busy = false;
-            var status = {};
+            let sha_sum = cryoto.createHash('sha1')
+            let node = this;
+            let busy = false;
+            let status = {};
             node.maaCoreConfig.on("state", function (info) {
                 if (info === "loading") {
                     node.status({fill: "grey", shape: "ring", text: info});
@@ -473,7 +481,64 @@ module.exports = function (RED) {
                 };
                 if (node.maaCoreConfig.loaded) {
                     if (typeof msg.topic === 'string') {
-                        //console.log("query:",msg.topic);
+                        console.log("query:", msg.topic);
+                        switch (msg.topic) {
+                            case "Version":
+                                msg.payload = node.maaCoreConfig.GetCoreVersion();
+                                send(msg);
+                                status = {fill: "green", shape: "dot", text: RED._("maa.status.ok")};
+                                break;
+                            case "Create":
+                                let uuid = sha_sum.update(msg.payload.address).digest('hex');
+                                node.maaCoreConfig.Create(uuid);
+                                msg.payload = uuid
+                                send(msg)
+                                status = {fill: "green", shape: "dot", text: RED._("maa.status.ok")};
+                                break;
+                            case "Connect":
+                                node.maaCoreConfig.Connect(
+                                    msg.payload.uuid,
+                                    msg.payload.adbPath,
+                                    msg.payload.address,
+                                    msg.payload.config
+                                );
+                                send(msg);
+                                status = {fill: "green", shape: "dot", text: RED._("maa.status.ok")};
+                                break;
+                            case "SetTouchMode":
+                                msg.payload = node.maaCoreConfig.SetTouchMode(
+                                    msg.payload.uuid,
+                                    msg.payload.mode,
+                                );
+                                send(msg);
+                                status = {fill: "green", shape: "dot", text: RED._("maa.status.ok")};
+                                break;
+                            case "AppendTask":
+                                msg.payload = node.maaCoreConfig.AppendTask(
+                                    msg.payload.uuid,
+                                    msg.payload.type,
+                                    msg.payload.params
+                                );
+                                send(msg);
+                                status = {fill: "green", shape: "dot", text: RED._("maa.status.ok")};
+                                break;
+                            case "Start":
+                                msg.payload = msg.payload = node.maaCoreConfig.Start();
+                                send(msg);
+                                status = {fill: "green", shape: "dot", text: RED._("maa.status.ok")};
+                                break;
+                            case "Stop":
+                                msg.payload = node.maaCoreConfig.Stop();
+                                send(msg);
+                                status = {fill: "green", shape: "dot", text: RED._("maa.status.ok")};
+                                break;
+                            default:
+                                msg.payload ="This method does not exist"
+                                send(msg)
+                                status = {fill: "green", shape: "dot", text: RED._("maa.status.ok")};
+                                break;
+                        }
+                        node.status(status);
                         // node.maaCoreConfig.pool.getConnection(function (err, conn) {
                         //     if (err) {
                         //         if (conn) {
