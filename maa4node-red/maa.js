@@ -2,13 +2,15 @@ const ffi = require("@tigerconnect/ffi-napi")
 const ref = require("@tigerconnect/ref-napi")
 const path = require("path");
 const cryoto = require("crypto")
+const {existsSync, mkdirSync, readFileSync, rmdirSync, unlinkSync, writeFileSync} = require("fs")
+const {TouchMode, InstanceOptionKey, RogueTheme} = require("./settings");
+// const {TouchMode} = require("./settings");
 // const callbackHandle = require("./callback")
 /*import ffi, {DynamicLibrary} from "@tigerconnect/ffi-napi";
 import ref from "@tigerconnect/ref-napi"
 import * as path from "path";
 import callbackHandle from './callback'
 // import { InstanceOptionKey } from '@main/../common/enum/core'
-import {InstanceOptionKey} from './settings'
 import {TouchMode} from './settings'*/
 
 /** Some types for core */
@@ -250,7 +252,10 @@ module.exports = function (RED) {
          * @param path? 未指定就用libPath
          * @returns
          */
-        function LoadResource(path) {
+        node.LoadResource = function (path) {
+            if (!existsSync(path)) {
+                return false
+            }
             return node.MeoAsstLib.AsstLoadResource(path ?? node.libPath)
         }
 
@@ -325,7 +330,7 @@ module.exports = function (RED) {
          * @returns
          */
         node.AppendTask = function (uuid, type, params) {
-            return node.MeoAsstLib.AsstAppendTask(GetCoreInstanceByUUID(uuid), type, params)
+            return node.MeoAsstLib.AsstAppendTask(node.GetCoreInstanceByUUID(uuid), type, params)
         }
 
         /**
@@ -337,7 +342,7 @@ module.exports = function (RED) {
 
         node.SetTaskParams = function (uuid, taskId, params) {
             return node.MeoAsstLib.AsstSetTaskParams(
-                GetCoreInstanceByUUID(uuid),
+                node.GetCoreInstanceByUUID(uuid),
                 taskId,
                 params
             )
@@ -349,7 +354,7 @@ module.exports = function (RED) {
          * @returns 是否成功
          */
         node.Start = function (uuid) {
-            return node.MeoAsstLib.AsstStart(GetCoreInstanceByUUID(uuid))
+            return node.MeoAsstLib.AsstStart(node.GetCoreInstanceByUUID(uuid))
         }
 
         /**
@@ -358,7 +363,7 @@ module.exports = function (RED) {
          * @returns
          */
         node.Stop = function (uuid) {
-            return node.MeoAsstLib.AsstStop(GetCoreInstanceByUUID(uuid))
+            return node.MeoAsstLib.AsstStop(node.GetCoreInstanceByUUID(uuid))
         }
 
         /**
@@ -369,7 +374,7 @@ module.exports = function (RED) {
          * @returns
          */
         node.Click = function (uuid, x, y) {
-            return node.MeoAsstLib.AsstClick(GetCoreInstanceByUUID(uuid), x, y)
+            return node.MeoAsstLib.AsstClick(node.GetCoreInstanceByUUID(uuid), x, y)
         }
 
         /**
@@ -380,14 +385,14 @@ module.exports = function (RED) {
          */
         function AsyncScreenCap(uuid, block = true) {
             if (!node.MeoAsstPtr[uuid]) return false
-            return node.MeoAsstLib.AsstAsyncScreenCap(GetCoreInstanceByUUID(uuid), block)
+            return node.MeoAsstLib.AsstAsyncScreenCap(node.GetCoreInstanceByUUID(uuid), block)
         }
 
         function GetImage(uuid) {
             const buf = Buffer.alloc(5114514)
             // const len = node.MeoAsstLib.AsstGetImage(GetCoreInstanceByUUID(uuid), buf as any, buf.length)
             // const buf2 = buf.slice(0, len as number)
-            const len = node.MeoAsstLib.AsstGetImage(GetCoreInstanceByUUID(uuid), buf, buf.length)
+            const len = node.MeoAsstLib.AsstGetImage(node.GetCoreInstanceByUUID(uuid), buf, buf.length)
             const buf2 = buf.slice(0, Number(len))
             const v2 = buf2.toString('base64')
             return v2
@@ -411,7 +416,7 @@ module.exports = function (RED) {
         }
 
         node.SetInstanceOption = function (uuid, key, value) {
-            return node.MeoAsstLib.AsstSetInstanceOption(GetCoreInstanceByUUID(uuid), key, value)
+            return node.MeoAsstLib.AsstSetInstanceOption(node.GetCoreInstanceByUUID(uuid), key, value)
         }
 
         node.SetTouchMode = function (uuid, mode) {
@@ -429,7 +434,7 @@ module.exports = function (RED) {
         function ChangeTouchMode(mode) {
             for (const uuid in node.MeoAsstPtr) {
                 if (node.MeoAsstPtr[uuid]) {
-                    const status = SetTouchMode(uuid, mode)
+                    const status = node.SetTouchMode(uuid, mode)
                     if (!status) {
                         // logger.error(`Change touch mode failed on uuid: ${uuid}`)
                         return status
@@ -488,15 +493,21 @@ module.exports = function (RED) {
                                 send(msg);
                                 status = {fill: "green", shape: "dot", text: RED._("maa.status.ok")};
                                 break;
+                            case "LoadResource":
+                                let maaPath = msg.payload.maaPath
+                                msg.payload = node.maaCoreConfig.LoadResource(maaPath)
+                                send(msg)
+                                status = {fill: "green", shape: "dot", text: RED._("maa.status.ok")};
+                                break;
                             case "Create":
                                 let uuid = sha_sum.update(msg.payload.address).digest('hex');
-                                node.maaCoreConfig.Create(uuid);
-                                msg.payload = uuid
+                                let flag = node.maaCoreConfig.Create(uuid);
+                                msg.payload = {"uuid": uuid, "flag": flag}
                                 send(msg)
                                 status = {fill: "green", shape: "dot", text: RED._("maa.status.ok")};
                                 break;
                             case "Connect":
-                                node.maaCoreConfig.Connect(
+                                msg.payload = node.maaCoreConfig.Connect(
                                     msg.payload.uuid,
                                     msg.payload.adbPath,
                                     msg.payload.address,
@@ -523,19 +534,23 @@ module.exports = function (RED) {
                                 status = {fill: "green", shape: "dot", text: RED._("maa.status.ok")};
                                 break;
                             case "Start":
-                                msg.payload = msg.payload = node.maaCoreConfig.Start();
+                                msg.payload = node.maaCoreConfig.Start(
+                                    msg.payload.uuid
+                                );
                                 send(msg);
                                 status = {fill: "green", shape: "dot", text: RED._("maa.status.ok")};
                                 break;
                             case "Stop":
-                                msg.payload = node.maaCoreConfig.Stop();
+                                msg.payload = node.maaCoreConfig.Stop(
+                                    msg.payload.uuid
+                                );
                                 send(msg);
                                 status = {fill: "green", shape: "dot", text: RED._("maa.status.ok")};
                                 break;
                             default:
-                                msg.payload ="This method does not exist"
+                                msg.payload = "This method does not exist"
                                 send(msg)
-                                status = {fill: "green", shape: "dot", text: RED._("maa.status.ok")};
+                                status = {fill: "red", shape: "ring", text: RED._("maa.status.notconnected")};
                                 break;
                         }
                         node.status(status);

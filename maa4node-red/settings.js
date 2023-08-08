@@ -22,19 +22,19 @@
 //     Mizuki = 'Mizuki', // 水月
 // }
 
-export const TouchMode = {
-    minitouch: 'minitouch',
-    maatouch: 'maatouch',
-    adb: 'adb'
-}
-
-export const InstanceOptionKey = {
-    Invalid: 0,
-    TouchMode: 2,
-    DeploymentWithPause: 3
-}
-
-export const RogueTheme = {
-    Phantom: 'Phantom',
-    Mizuki: 'Mizuki',
+module.exports = {
+    TouchMode: {
+        minitouch: 'minitouch',
+        maatouch: 'maatouch',
+        adb: 'adb'
+    },
+    InstanceOptionKey: {
+        Invalid: 0,
+        TouchMode: 2,
+        DeploymentWithPause: 3
+    },
+    vRogueTheme: {
+        Phantom: 'Phantom',
+        Mizuki: 'Mizuki',
+    }
 }
