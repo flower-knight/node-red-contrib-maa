@@ -1,0 +1,34 @@
+<script type="text/html" data-template-name="load_resource">
+    <div class="form-row">
+        <label for="node-input-adbPath"><i class="fa fa-adn"></i> <span
+                data-i18n="maa.label.adbPath"></span></label>
+        <input type="text" id="node-input-adbPath">
+    </div>
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> <span
+                data-i18n="node-red:common.label.name"></span></label>
+        <input type="text" id="node-input-name" data-i18n="[placeholder]node-red:common.label.name">
+    </div>
+</script>
+
+<script type="text/javascript">
+    RED.nodes.registerType('load_resource', {
+        category: 'maa',
+        color: "#e97b00",
+        defaults: {
+            adbPath: {value: ""},
+            name: {value: ""}
+        },
+        inputs: 1,
+        outputs: 1,
+        icon: "maa.png",
+        paletteLabel: 'load resource',
+        // label: function () {
+        //     var levelNode = RED.nodes.node(this.maaCore);
+        //     return this.name || (levelNode ? levelNode.label() : "loadResource");
+        // },
+        labelStyle: function () {
+            return this.name ? "node_label_italic" : "";
+        }
+    });
+</script>
