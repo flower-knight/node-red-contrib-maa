@@ -1,10 +1,12 @@
 <script type="text/html" data-template-name="maaCore">
     <div class="form-row">
-        <label for="node-config-input-maaPath"><i class="fa fa-map-marker"></i> <span data-i18n="maa.label.maaPath"></span></label>
+        <label for="node-config-input-maaPath"><i class="fa fa-map-marker"></i> <span
+                data-i18n="maa.label.maaPath"></span></label>
         <input type="text" id="node-config-input-maaPath">
     </div>
     <div class="form-row">
-        <label for="node-config-input-adbPath"><i class="fa fa-adn"></i> <span data-i18n="maa.label.adbPath"></span></label>
+        <label for="node-config-input-adbPath"><i class="fa fa-adn"></i> <span
+                data-i18n="maa.label.adbPath"></span></label>
         <input type="text" id="node-config-input-adbPath">
     </div>
     <!--    <div class="form-row">-->
@@ -16,10 +18,11 @@
     <!--        <input type="password" id="node-config-input-password">-->
     <!--    </div>-->
     <div class="form-row">
-        <label for="node-config-input-name"><i class="fa fa-tag"></i> <span data-i18n="node-red:common.label.name"></span></label>
-        <input type="text" id="node-config-input-name" data-i18n="[placeholder]node-red:common.label.name">
+        <label for="node-config-maa-name"><i class="fa fa-tag"></i> <span
+                data-i18n="node-red:common.label.name"></span></label>
+        <input type="text" id="node-config-maa-name" data-i18n="[placeholder]node-red:common.label.name">
     </div>
-        <div class="form-tips"><span data-i18n="[html]maa.tip"></span></div>
+    <div class="form-tips"><span data-i18n="[html]maa.tip"></span></div>
 </script>
 
 <script type="text/javascript">
@@ -48,18 +51,17 @@
         <input type="text" id="node-input-maaCore">
     </div>
     <div class="form-row">
-        <label for="node-input-name"><i class="fa fa-tag"></i> <span
+        <label for="node-maa-name"><i class="fa fa-tag"></i> <span
                 data-i18n="node-red:common.label.name"></span></label>
-        <input type="text" id="node-input-name" data-i18n="[placeholder]node-red:common.label.name">
+        <input type="text" id="node-maa-name" data-i18n="[placeholder]node-red:common.label.name">
     </div>
 </script>
 
 <script type="text/javascript">
     RED.nodes.registerType('maa', {
-        category: 'storage-input',
+        category: 'maa',
         // color:"#e97b00",
         color: "#4ccee4",
-        // color: "#263959",
         defaults: {
             maaCore: {type: "maaCore", required: true},
             name: {value: ""}
