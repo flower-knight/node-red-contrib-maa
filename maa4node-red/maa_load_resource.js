@@ -8,7 +8,8 @@ module.exports = function (RED) {
             send = send || function () {
                 node.send.apply(node, arguments)
             };
-            msg.payload = maaPath;
+            msg.topic = "LoadResource"
+            msg.payload = {maaPath: maaPath};
             send(msg);
             // status = { fill: "green", shape: "dot", text: RED._("mysql.status.ok") };
             // node.status(status);
@@ -18,6 +19,7 @@ module.exports = function (RED) {
     RED.nodes.registerType("load_resource", LoadResourceNode, {
         defaults: {
             maaPath: {value: ""},
+            name: {value: ""}
         }
     });
 }

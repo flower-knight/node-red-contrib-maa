@@ -5,9 +5,9 @@
         <input type="text" id="node-input-maaPath" data-i18n="[placeholder]maa.label.maaPath">
     </div>
     <div class="form-row">
-        <label for="node-maa-name"><i class="fa fa-tag"></i> <span
+        <label for="node-input-name"><i class="fa fa-tag"></i> <span
                 data-i18n="node-red:common.label.name"></span></label>
-        <input type="text" id="node-maa-name" data-i18n="[placeholder]node-red:common.label.name">
+        <input type="text" id="node-input-name" data-i18n="[placeholder]node-red:common.label.name">
     </div>
 </script>
 
@@ -17,18 +17,15 @@
         color: "#4ccee4",
         defaults: {
             maaPath: {value: ""},
-            name: {value: "load resource"}
+            name: {value: ""}
+            // name: {value: "load resource"}
         },
         inputs: 1,
         outputs: 1,
         icon: "maa.png",
         paletteLabel: 'load resource',
-        // label: function () {
-        //     var levelNode = RED.nodes.node(this.maaCore);
-        //     return this.name || (levelNode ? levelNode.label() : "loadResource");
-        // },
-        labelStyle: function () {
-            return this.name ? "node_label_italic" : "";
-        }
+        label: function () {
+            return this.name;
+        },
     });
 </script>
