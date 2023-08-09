@@ -1,7 +1,9 @@
 <script type="text/html" data-template-name="load_resource">
     <div class="form-row">
-        <label for="node-input-maaPath"><i class="fa fa-database"></i> <span
-                data-i18n="maa.label.maaPath"></span></label>
+        <label for="node-input-maaPath">
+            <i class="fa fa-map-marker"></i>
+            <span data-i18n="maa.label.maaPath"></span>
+        </label>
         <input type="text" id="node-input-maaPath" data-i18n="[placeholder]maa.label.maaPath">
     </div>
     <div class="form-row">
@@ -22,8 +24,9 @@
         },
         inputs: 1,
         outputs: 1,
-        icon: "maa.png",
+        icon: "font-awesome/fa-spinner",
         paletteLabel: 'load resource',
+        align: "right",
         label: function () {
             return this.name;
         },
