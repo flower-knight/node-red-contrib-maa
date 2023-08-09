@@ -13,7 +13,8 @@
   "node-red": {
     "nodes": {
       "maa": "maa4node-red/maa_core.js",
-      "maa_load_resource": "maa4node-red/maa_load_resource.js"
+      "maa_load_resource": "maa4node-red/maa_load_resource.js",
+      "maa_set_touch_mode": "maa4node-red/maa_set_touch_mode.js"
     }
   },
   "keywords": [

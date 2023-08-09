@@ -1,0 +1,53 @@
+<script type="text/html" data-template-name="set_touch_mode">
+    <div class="form-row">
+        <label for="node-input-touchMode" id="touchMode-input-row">
+            <i class="fa fa-dot-circle-o"></i>
+            <span data-i18n="maa.label.touchMode"></span>
+        </label>
+        <select id="node-input-touchMode" data-i18n="[placeholder]maa.label.touchMode" style="width:70%"></select>
+    </div>
+    <div class="form-row">
+        <label for="node-input-name">
+            <i class="fa fa-tag"></i>
+            <span data-i18n="node-red:common.label.name"></span>
+        </label>
+        <input type="text" id="node-input-name" data-i18n="[placeholder]node-red:common.label.name">
+    </div>
+</script>
+
+<script type="text/javascript">
+    RED.nodes.registerType('set_touch_mode', {
+        category: 'maa',
+        color: "#4ccee4",
+        defaults: {
+            touchMode: {value: "maatouch"},
+            name: {value: ""}
+            // name: {value: "load resource"}
+        },
+        inputs: 1,
+        outputs: 1,
+        icon: "font-awesome/fa-dot-circle-o",
+        paletteLabel: 'touch mode',
+        label: function () {
+            return this.name || "touch mode";
+        },
+        align: "right",
+        outputLabels: function () {
+            return this.touchMode;
+        },
+        oneditprepare: function () {
+            const touchModeName = ["maatouch", "minitouch", "adb"];
+            const touchModeText = ["maaTouch", "miniTouch", "adb"]
+            // var sel = $("#node-input-touchMode");
+            for (i = 0; i < touchModeName.length; i++) {
+                let name = touchModeName[i];
+                let text = touchModeText[i];
+                $("<option/>").val(name).text(text).appendTo($("#node-input-touchMode"));
+            }
+            $("#node-input-touchMode").val(this.touchMode || 0)
+            // $("#node-input-touchMode").on("change", function () {
+            //     touchMode = this.touchMode = $("#node-input-touchMode").val();
+            // })
+        },
+    });
+</script>
