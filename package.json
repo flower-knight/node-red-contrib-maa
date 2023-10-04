@@ -14,7 +14,8 @@
     "nodes": {
       "maa": "maa4node-red/maa_core.js",
       "maa_load_resource": "maa4node-red/maa_load_resource.js",
-      "maa_set_touch_mode": "maa4node-red/maa_set_touch_mode.js"
+      "maa_set_touch_mode": "maa4node-red/maa_set_touch_mode.js",
+      "maa_append_task": "maa4node-red/maa_append_task.js"
     }
   },
   "keywords": [
