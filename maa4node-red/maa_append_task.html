@@ -1,0 +1,55 @@
+<script type="text/html" data-template-name="append_task">
+    <div class="form-row">
+        <label for="node-append-task-action">
+            <i class="fa fa-tasks"></i>
+            <span data-i18n="append_task.task_type"></span></label>
+        <select id="node-append-task-action" style="width:270px !important">
+            <option value="wakeup" data-i18n="[placeholder]append_task.type.wakeup"></option>
+<!--            <option value="fight" data-i18n="[placeholder]append_task.type.fight"></option>-->
+        </select>
+    </div>
+
+    <!-- 唤醒 -->
+    <div id="wakeup-details">
+        <div class="form-row">
+            <label>
+                <i class="fa fa-tag"></i>
+                <span data-i18n="node-red:common.label.name"></span>
+            </label>
+            <select id="node-input-client-type" style="width:270px !important">
+                <option value="Official" data-i18n="append_task.client_type.official"></option>
+                <option value="Bilibili" data-i18n="append_task.client_type.bilibili"></option>
+            </select>
+        </div>
+    </div>
+
+    <div class="form-row">
+        <label for="node-input-name">
+            <i class="fa fa-tag"></i>
+            <span data-i18n="node-red:common.label.name"></span>
+        </label>
+        <input type="text" id="node-input-name" data-i18n="[placeholder]node-red:common.label.name">
+    </div>
+</script>
+
+<script type="text/javascript">
+    RED.nodes.registerType('append_task', {
+        category: 'maa',
+        color: "#4ccee4",
+        defaults: {
+            task_type: {value: ""},
+            name: {value: ""}
+        },
+        inputs: 1,
+        outputs: 1,
+        icon: "font-awesome/fa-tasks",
+        paletteLabel: 'append task',
+        label: function () {
+            return this.name || "append task";
+        },
+        align: "left",
+        outputLabels: function () {
+            return this.touchMode;
+        },
+    });
+</script>

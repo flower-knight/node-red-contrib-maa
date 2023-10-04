@@ -1,0 +1,10 @@
+{
+  "append_task": {
+    "task_type": "任务类型",
+    "type": {
+      "wakeup": "唤醒",
+      "fight": "战斗",
+      "start": "开始"
+    }
+  }
+}
