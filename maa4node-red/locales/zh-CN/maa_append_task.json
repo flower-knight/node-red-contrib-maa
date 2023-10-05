@@ -1,10 +1,33 @@
 {
   "append_task": {
-    "task_type": "任务类型",
-    "type": {
-      "wakeup": "唤醒",
+    "taskTypeName": "任务类型",
+    "taskType": {
+      "startup": "唤醒",
       "fight": "战斗",
       "start": "开始"
+    },
+    "startup": {
+      "clientTypeName": "客户端类型",
+      "clientType": {
+        "official": "官服",
+        "bilibili": "B服",
+        "english": "国际服（YoStarEN）",
+        "japan": "日服（YoStarJP）",
+        "korea": "韩服（YoStarKR）",
+        "taiwan": "繁中服（txwy）"
+      },
+      "startGameEnabled": "唤醒时启动游戏"
+    },
+    "fight": {
+      "stageName": "关卡",
+      "stage": {
+        "lastTime": "当前/上次",
+        "CE-6/5": "龙门币-6/5",
+        "AP-5": "红票-5",
+        "LS-6/5": "经验-6/5"
+      },
+      "reportToPenguin": "上报企鹅物流",
+      "medicine": "理智药"
     }
   }
 }

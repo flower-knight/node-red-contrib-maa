@@ -1,25 +1,56 @@
 <script type="text/html" data-template-name="append_task">
     <div class="form-row">
-        <label for="node-append-task-action">
+        <label for="node-input-taskType">
             <i class="fa fa-tasks"></i>
-            <span data-i18n="append_task.task_type"></span></label>
-        <select id="node-append-task-action" style="width:270px !important">
-            <option value="wakeup" data-i18n="[placeholder]append_task.type.wakeup"></option>
-<!--            <option value="fight" data-i18n="[placeholder]append_task.type.fight"></option>-->
+            <span data-i18n="append_task.taskTypeName"></span>
+        </label>
+        <select id="node-input-taskType" style="width:270px !important">
+            <option value="StartUp" data-i18n="append_task.taskType.startup"></option>
+            <option value="Fight" data-i18n="append_task.taskType.fight"></option>
         </select>
     </div>
 
     <!-- 唤醒 -->
-    <div id="wakeup-details">
+    <div id="startup-details">
         <div class="form-row">
             <label>
-                <i class="fa fa-tag"></i>
-                <span data-i18n="node-red:common.label.name"></span>
+                <i class="fa fa-server"></i>
+                <span data-i18n="append_task.startup.clientTypeName"></span>
             </label>
-            <select id="node-input-client-type" style="width:270px !important">
-                <option value="Official" data-i18n="append_task.client_type.official"></option>
-                <option value="Bilibili" data-i18n="append_task.client_type.bilibili"></option>
+            <select id="node-input-clientType" style="width:270px !important">
+                <option value="Official" data-i18n="append_task.startup.clientType.official"></option>
+                <option value="Bilibili" data-i18n="append_task.startup.clientType.bilibili"></option>
+                <option value="YoStarEN" data-i18n="append_task.startup.clientType.english"></option>
+                <option value="YoStarJP" data-i18n="append_task.startup.clientType.japan"></option>
+                <option value="YoStarKR" data-i18n="append_task.startup.clientType.korea"></option>
+                <option value="txwy" data-i18n="append_task.startup.clientType.taiwan"></option>
             </select>
+        </div>
+        <div class="form-row" id="startup-override" style="display: flex; align-items: center">
+            <label></label><input style="width:30px; margin:0" type="checkbox" id="node-input-start-game-enabled">
+            <label style="margin:0;width: auto;" for="node-input-start-game-enabled"
+                   data-i18n="append_task.startup.startGameEnabled"></label>
+        </div>
+    </div>
+
+    <!-- 战斗 -->
+    <div id="fight-details">
+        <div class="form-row">
+            <label>
+                <i class="fa fa-map"></i>
+                <span data-i18n="append_task.fight.stageName"></span>
+            </label>
+            <select id="node-input-stage" style="width:270px !important">
+                <option value="" data-i18n="append_task.fight.stage.lastTime"></option>
+                <option value="CE-6/5" data-i18n="append_task.fight.stage.CE-6/5"></option>
+                <option value="AP-5" data-i18n="append_task.fight.stage.AP-5"></option>
+                <option value="LS-6/5" data-i18n="append_task.fight.stage.LS-6/5"></option>
+            </select>
+        </div>
+        <div class="form-row" id="fight-override" style="display: flex; align-items: center">
+            <label></label><input style="width:30px; margin:0" type="checkbox" id="node-input-reportToPenguin">
+            <label style="margin:0;width: auto;" for="node-input-reportToPenguin"
+                   data-i18n="append_task.fight.reportToPenguin"></label>
         </div>
     </div>
 
@@ -37,19 +68,85 @@
         category: 'maa',
         color: "#4ccee4",
         defaults: {
-            task_type: {value: ""},
-            name: {value: ""}
+            name: {value: ""},
+            taskType: {value: "Fight", required: true},
+            // 唤醒
+            clientType: {value: "Official"},
+            startGameEnabled: {value: false},
+            // 战斗
+            stage: {value: ""},
+            reportToPenguin: {value: false},
+            medicine: {value: 0}
         },
         inputs: 1,
         outputs: 1,
         icon: "font-awesome/fa-tasks",
         paletteLabel: 'append task',
         label: function () {
-            return this.name || "append task";
+            if (this.name) {
+                return this.name;
+            }
+            if (this.taskType == "StartUp") {
+                let suffix = "";
+                if (this.clientType == "Official") {
+                    suffix = this._("append_task.startup.clientType.official");
+                } else if (this.clientType == "Bilibili") {
+                    suffix = this._("append_task.startup.clientType.bilibili");
+                } else if (this.clientType == "txwy") {
+                    suffix = this._("append_task.startup.clientType.taiwan");
+                } else if (this.clientType == "YoStarEN") {
+                    suffix = this._("append_task.startup.clientType.english");
+                } else if (this.clientType == "YoStarJP") {
+                    suffix = this._("append_task.startup.clientType.japan");
+                } else if (this.clientType == "YoStarKR") {
+                    suffix = this._("append_task.startup.clientType.korea");
+                }
+                return this._("append_task.taskType.startup") + " " + suffix;
+            } else if (this.taskType == "Fight") {
+                let suffix = "";
+                if (this.stage == "") {
+                    suffix = this._("append_task.fight.stage.lastTime");
+                } else if (this.stage == "CE-6/5") {
+                    suffix = this._("append_task.fight.stage.CE-6/5");
+                } else if (this.stage == "LS-6/5") {
+                    suffix = this._("append_task.fight.stage.LS-6/5");
+                } else if (this.stage == "AP-5") {
+                    suffix = this._("append_task.fight.stage.AP-5");
+                } else {
+                    suffix = this.stage;
+                }
+                return this._("append_task.taskType.fight") + " " + suffix;
+            }
+            return "append task"
         },
         align: "left",
-        outputLabels: function () {
-            return this.touchMode;
-        },
+        // outputLabels: function () {
+        //     return this.touchMode;
+        // },
+        oneditprepare: function () {
+            var node = this;
+            $("#node-input-taskType").on("change", function () {
+                if (this.value === "StartUp") {
+                    $("#startup-details").show();
+                    $("#fight-details").hide();
+                } else if (this.value === "Fight") {
+                    $("#startup-details").hide();
+                    $("#fight-details").show();
+                }
+            }).trigger("change");
+
+            // $("#node-input-delay-type").on("change", function () {
+            //     if (this.value === "delay") {
+            //         $("#delay-details-for").show();
+            //         $("#random-details").hide();
+            //     } else if (this.value === "delayv") {
+            //         $("#delay-details-for").show();
+            //         $("#random-details").hide();
+            //     } else if (this.value === "random") {
+            //         $("#delay-details-for").hide();
+            //         $("#random-details").show();
+            //     }
+            // }).trigger("change");
+        }
     });
 </script>
