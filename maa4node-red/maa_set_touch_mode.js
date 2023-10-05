@@ -1,7 +1,6 @@
 module.exports = function (RED) {
     function SetTouchModeNode(config) {
         RED.nodes.createNode(this, config);
-        let uuid = config.uuid;
         let touchMode = config.touchMode;
         let node = this;
 
@@ -9,7 +8,8 @@ module.exports = function (RED) {
             send = send || function () {
                 node.send.apply(node, arguments)
             };
-            msg.topic = "SetTouchMode"
+            let uuid = msg.payload;
+            msg.topic = "SetTouchMode";
             msg.payload = {
                 uuid: uuid,
                 touchMode: touchMode
@@ -22,7 +22,7 @@ module.exports = function (RED) {
 
     RED.nodes.registerType("set_touch_mode", SetTouchModeNode, {
         defaults: {
-            maaPath: {value: ""},
+            touchMode: {value: "maatouch"},
             name: {value: ""}
         }
     });
