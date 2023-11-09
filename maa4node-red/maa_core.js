@@ -598,10 +598,10 @@ module.exports = function (RED) {
                                     msg.payload.uuid
                                 );
                                 send(msg);
-                                status = {fill: "green", shape: "dot", text: RED._("maa.status.ok")};
+
                                 break;
                             case "Dispose":
-                                if (!node.maaCoreConfig.loading) {
+                                if (!node.maaCoreConfig.loaded) {
                                     msg.payload = "core already dispose, ignore..."
                                     send(msg)
                                     status = {fill: "red", shape: "ring", text: RED._("maa.status.notconnected")};
@@ -618,7 +618,10 @@ module.exports = function (RED) {
                                 for (const dep of node.maaCoreConfig.DepLibs) {
                                     dep.close()
                                 }
-                                node.maaCoreConfig.loading = false
+                                node.maaCoreConfig.loaded = false
+                                msg.payload = "core has been disposed"
+                                send(msg)
+                                status = {fill: "green", shape: "dot", text: RED._("maa.status.ok")};
                                 break;
                             default:
                                 msg.payload = "This method does not exist"
