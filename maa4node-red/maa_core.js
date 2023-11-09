@@ -3,7 +3,7 @@ const ref = require("@tigerconnect/ref-napi")
 const path = require("path");
 const cryoto = require("crypto")
 const {existsSync, mkdirSync, readFileSync, rmdirSync, unlinkSync, writeFileSync} = require("fs")
-const {TouchMode, InstanceOptionKey, RogueTheme} = require("./settings");
+const {TouchMode, InstanceOptionKey, RogueTheme} = require("./settings.js");
 // const {TouchMode} = require("./settings");
 // const callbackHandle = require("./callback")
 /*import ffi, {DynamicLibrary} from "@tigerconnect/ffi-napi";
@@ -31,6 +31,20 @@ const AsstPtrType = ref.refType(AsstType)
 const CustomArgsType = ref.refType(ref.types.void)
 const IntPointerType = ref.refType(IntType)
 const Buff = CustomArgsType
+
+const callbackHandle = ffi.Callback(
+    'void',
+    ['int', 'string', ref.refType(ref.types.void)],
+    (code, data, customArgs) => {
+        // logger.silly(code)
+        // logger.silly(data)
+        ipcMainSend('renderer.CoreLoader:callback', {
+            code,
+            data: JSON.parse(data)
+            // customArgs
+        })
+    }
+)
 
 function createVoidPointer() {
     return ref.alloc(ref.types.void)
@@ -273,6 +287,25 @@ module.exports = function (RED) {
             return false
         }
 
+        /**
+         * @description 创建实例
+         * @param uuid 设备唯一标识符
+         * @param callback 回调函数
+         * @param customArg 自定义参数{???}
+         * @returns  是否创建成功
+         */
+        node.CreateEx = function (
+            uuid,
+            callback = callbackHandle,
+            customArg = createVoidPointer()
+        ) {
+            if (!node.MeoAsstPtr[uuid]) {
+                node.MeoAsstPtr[uuid] = node.MeoAsstLib.AsstCreateEx(callback, customArg)
+                return true
+            }
+            return false
+        }
+
         // /**
         //  * @description 创建实例
         //  * @param uuid 设备唯一标识符
@@ -364,6 +397,19 @@ module.exports = function (RED) {
          */
         node.Stop = function (uuid) {
             return node.MeoAsstLib.AsstStop(node.GetCoreInstanceByUUID(uuid))
+        }
+
+        /**
+         * @description 摧毁实例
+         * @param uuid 设备唯一标识符
+         * @returns
+         */
+        node.Destroy = function (uuid) {
+            if (node.MeoAsstPtr[uuid]) {
+                node.MeoAsstLib.AsstDestroy(node.MeoAsstPtr[uuid])
+                // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+                delete node.MeoAsstPtr[uuid]
+            }
         }
 
         /**
@@ -500,9 +546,16 @@ module.exports = function (RED) {
                                 status = {fill: "green", shape: "dot", text: RED._("maa.status.ok")};
                                 break;
                             case "Create":
-                                let uuid = sha_sum.update(msg.payload.address).digest('hex');
-                                let flag = node.maaCoreConfig.Create(uuid);
+                                const uuid = sha_sum.update(msg.payload.address).digest('hex');
+                                const flag = node.maaCoreConfig.Create(uuid);
                                 msg.payload = {"uuid": uuid, "flag": flag}
+                                send(msg)
+                                status = {fill: "green", shape: "dot", text: RED._("maa.status.ok")};
+                                break;
+                            case "CreateEx":
+                                const uuid1 = sha_sum.update(msg.payload.address).digest('hex');
+                                const flag1 = node.maaCoreConfig.CreateEx(uuid1);
+                                msg.payload = {"uuid": uuid1, "flag": flag1}
                                 send(msg)
                                 status = {fill: "green", shape: "dot", text: RED._("maa.status.ok")};
                                 break;
@@ -546,6 +599,26 @@ module.exports = function (RED) {
                                 );
                                 send(msg);
                                 status = {fill: "green", shape: "dot", text: RED._("maa.status.ok")};
+                                break;
+                            case "Dispose":
+                                if (!node.maaCoreConfig.loading) {
+                                    msg.payload = "core already dispose, ignore..."
+                                    send(msg)
+                                    status = {fill: "red", shape: "ring", text: RED._("maa.status.notconnected")};
+                                    return
+                                }
+                                for (const uuid of Object.keys(node.MeoAsstPtr)) {
+                                    node.maaCoreConfig.Stop(uuid)
+                                    node.maaCoreConfig.Destroy(uuid)
+                                }
+                                try {
+                                    node.maaCoreConfig.DLib.close()
+                                } catch (e) {
+                                }
+                                for (const dep of node.maaCoreConfig.DepLibs) {
+                                    dep.close()
+                                }
+                                node.maaCoreConfig.loading = false
                                 break;
                             default:
                                 msg.payload = "This method does not exist"
