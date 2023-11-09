@@ -607,7 +607,7 @@ module.exports = function (RED) {
                                     status = {fill: "red", shape: "ring", text: RED._("maa.status.notconnected")};
                                     return
                                 }
-                                for (const uuid of Object.keys(node.MeoAsstPtr)) {
+                                for (const uuid of Object.keys(node.maaCoreConfig.MeoAsstPtr)) {
                                     node.maaCoreConfig.Stop(uuid)
                                     node.maaCoreConfig.Destroy(uuid)
                                 }
