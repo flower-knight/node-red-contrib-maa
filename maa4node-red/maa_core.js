@@ -578,11 +578,16 @@ module.exports = function (RED) {
                                 status = {fill: "green", shape: "dot", text: RED._("maa.status.ok")};
                                 break;
                             case "AppendTask":
-                                msg.payload = node.maaCoreConfig.AppendTask(
+                                const taskType = msg.payload.type;
+                                const taskId = node.maaCoreConfig.AppendTask(
                                     msg.payload.uuid,
                                     msg.payload.type,
                                     msg.payload.params
                                 );
+                                msg.payload = {
+                                    taskId: taskId,
+                                    taskType: taskType,
+                                }
                                 send(msg);
                                 status = {fill: "green", shape: "dot", text: RED._("maa.status.ok")};
                                 break;
