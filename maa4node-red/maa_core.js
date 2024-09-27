@@ -532,7 +532,7 @@ module.exports = function (RED) {
                 };
                 if (node.maaCoreConfig.loaded) {
                     if (typeof msg.topic === 'string') {
-                        console.log("query:", msg.topic);
+                        console.log("action:", msg.topic);
                         switch (msg.topic) {
                             case "Version":
                                 msg.payload = node.maaCoreConfig.GetCoreVersion();
