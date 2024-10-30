@@ -1,0 +1,21 @@
+{
+  "maa": {
+    "label": {
+      "maaCore": "MaaCore",
+      "maaPath": "Maa路径",
+      "adbPath": "Adb路径"
+    },
+    "status": {
+      "loadFailed": "maaCore load failed",
+      "error": "Error",
+      "ok": "OK"
+    },
+    "errors": {
+      "notMethod": "This method does not exist",
+      "notString": "The topic is not defined as a string",
+      "notLoaded": "MaaCore not loaded",
+      "notConfigured": "MaaCore not configured"
+    },
+    "tip": "Tip: NodeRed以容器化方式运行时，MaaCore中配置的路径应当为容器内的路径"
+  }
+}
