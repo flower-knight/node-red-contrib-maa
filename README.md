@@ -22,7 +22,7 @@ A Node-RED node to call C/C++ program named MaaAssistantArknights
 
    ![](./picture/01maa-node.jpg)![](./picture/02maa-node.jpg)
 
-4. 复制[maa.json](./flow/maa.json)的内容，在Node-RED页面右上角下拉导入选项，粘贴并单击导入
+4. 复制[maa.json](flow/maa_demo/maa_demo.json)的内容，在Node-RED页面右上角下拉导入选项，粘贴并单击导入
 
    - 导入后会提示缺少某些节点，主要涉及显示和定时任务的实现，不影响主要功能，可以删除。有需要可以在右上角下拉栏的`节点管理`中安装以下节点
      - node-red-dashboard
