@@ -1,203 +1,203 @@
-const ffi = require("@tigerconnect/ffi-napi")
-const ref = require("@tigerconnect/ref-napi")
-const path = require("path");
-const cryoto = require("crypto")
-const {existsSync, mkdirSync, readFileSync, rmdirSync, unlinkSync, writeFileSync} = require("fs")
-const {TouchMode, InstanceOptionKey, RogueTheme} = require("./settings.js");
-// const {TouchMode} = require("./settings");
-// const callbackHandle = require("./callback")
-/*import ffi, {DynamicLibrary} from "@tigerconnect/ffi-napi";
-import ref from "@tigerconnect/ref-napi"
-import * as path from "path";
-import callbackHandle from './callback'
-// import { InstanceOptionKey } from '@main/../common/enum/core'
-import {TouchMode} from './settings'*/
+// import {koffi} from 'koffi';
+// import {os} from 'os';
+// import {path} from 'path';
+// import {cryoto} from 'cryoto';
 
-/** Some types for core */
-const BoolType = ref.types.bool
-const IntType = ref.types.int
-const AsstAsyncCallIdType = ref.types.int
-// const AsstBoolType = ref.types.uint8
-// const IntArrayType = ArrayType(IntType)
-// const DoubleType = ref.types.double
-const ULLType = ref.types.ulonglong
-const VoidType = ref.types.void
-const StringType = ref.types.CString
-// const StringPtrType = ref.refType(StringType)
-// const StringPtrArrayType = ArrayType(StringType)
-const AsstType = ref.types.void
-const AsstPtrType = ref.refType(AsstType)
-// const TaskPtrType = ref.refType(AsstType)
-const CustomArgsType = ref.refType(ref.types.void)
-const IntPointerType = ref.refType(IntType)
-const Buff = CustomArgsType
+// import {existsSync, mkdirSync, readFileSync, rmdirSync, unlinkSync, writeFileSync} from 'fs';
+// import {ParamType} from './settings';
 
-const callbackHandle = ffi.Callback(
-    'void',
-    ['int', 'string', ref.refType(ref.types.void)],
-    (code, data, customArgs) => {
-        // logger.silly(code)
-        // logger.silly(data)
-        ipcMainSend('renderer.CoreLoader:callback', {
-            code,
-            data: JSON.parse(data)
-            // customArgs
-        })
-    }
-)
+const koffi = require("koffi");
+const os = require("os")
+const path = require("path")
+const cryoto = require("crypto-js")
 
-function createVoidPointer() {
-    return ref.alloc(ref.types.void)
-}
+const {existsSync, mkdirSync, readFileSync, rmdirSync, unlinkSync, writeFileSync} = require('fs');
+const {TouchMode, InstanceOptionKey, RogueTheme} = require('./settings.js');
 
+
+const StringType = "str";
+const VoidType = "void";
+// const AsstPtrType = koffi.opaque('Concat');
+const AsstPtrType = koffi.pointer('AsstPtrType', koffi.opaque());
+const BoolType = 'bool';
+const IntType = 'int';
+const CustomArgsType = 'void *';
+const ULLType = 'ulonglong';
+const IntPointerType = 'int *';
+const Buff = CustomArgsType;
+const AsstAsyncCallIdType = IntType;
 
 module.exports = function (RED) {
-    var reload = RED.settings.maaReloadTime || 20000;
+    const reload = RED.settings.maaReloadTime || 20000;
 
-    function MaaNode(config) {
-        RED.nodes.createNode(this, config);
+    // maa配置节点
+    function MaaCore(config) {
+        // 在NodeRED中创建节点
         const node = this;
-        this.adbPath = config.adbPath
-        this.maaPath = config.maaPath
-        // this.host = config.host
-        this.libPath = config.maaPath
-        this.DepLibs = []
-        this.MeoAsstPtr = {}
-        this.loading = false;
-        this.loaded = false;
-        this.dependences = {
-            win32: ['opencv_world4_maa.dll', 'onnxruntime_maa.dll', 'MaaDerpLearning.dll'],
-            linux: ['libopencv_world4.so.407', 'libonnxruntime.so.1.14.1', 'libMaaDerpLearning.so'],
-            darwin: ['libopencv_world4.dylib', 'libonnxruntime.dylib', 'libMaaDerpLearning.dylib'],
-        }
-        this.libName = {
+        RED.nodes.createNode(node, config);
+        // adb地址
+        node.adbPath = config.adbPath;
+        // maa地址
+        node.maaPath = config.maaPath;
+        node.libPath = config.maaPath;
+        // 依赖库
+        node.DepLibs = [];
+        // 创建的实例的ID和指针的映射表
+        node.MeoAsstPtr = {};
+        // 节点是否正在加载
+        node.loading = false;
+        // 节点是否加载完毕
+        node.loaded = false;
+        node.libName = {
             win32: 'MaaCore.dll',
             darwin: 'libMaaCore.dylib',
             linux: 'libMaaCore.so',
         }
 
-
         async function load() {
             try {
+                // 更新节点状态为loading
                 node.loading = true;
-                node.emit("state", "loading")
+                node.emit('state', 'loading')
+                // 如果没加载过依赖库，则去加载
                 if (!node.MeoAsstLib) {
-                    node.dependences[process.platform].forEach((lib) => {
-                        node.DepLibs.push(ffi.DynamicLibrary(path.join(node.libPath, lib)))
-                    })
-                    node.DLib = ffi.DynamicLibrary(path.join(node.libPath, node.libName[process.platform]), ffi.RTLD_NOW)
+                    // 根据平台加载对应的依赖文件
+                    node.DLib = koffi.load(path.join(node.libPath, node.libName[os.platform()]));
                     node.MeoAsstLib = {
-                        AsstSetUserDir: ffi.ForeignFunction(node.DLib.get('AsstSetUserDir'),
+                        AsstSetUserDir: node.DLib.func(
+                            'AsstSetUserDir',
                             BoolType,
                             [StringType],
-                            ffi.FFI_STDCALL),
+                        ),
 
-                        AsstLoadResource: ffi.ForeignFunction(node.DLib.get('AsstLoadResource'),
+                        AsstLoadResource: node.DLib.func(
+                            'AsstLoadResource',
                             BoolType,
                             [StringType],
-                            ffi.FFI_STDCALL),
+                        ),
 
-                        AsstSetStaticOption: ffi.ForeignFunction(node.DLib.get('AsstSetStaticOption'),
+                        AsstSetStaticOption: node.DLib.func(
+                            'AsstSetStaticOption',
                             BoolType,
                             [IntType, StringType],
-                            ffi.FFI_STDCALL),
+                        ),
 
-                        AsstCreate: ffi.ForeignFunction(node.DLib.get('AsstCreate'),
+                        AsstCreate: node.DLib.func(
+                            'AsstCreate',
                             AsstPtrType,
                             [],
-                            ffi.FFI_STDCALL),
+                        ),
 
-                        AsstCreateEx: ffi.ForeignFunction(node.DLib.get('AsstCreateEx'),
-                            AsstPtrType,
-                            ['pointer', CustomArgsType],
-                            ffi.FFI_STDCALL),
+                        // AsstCreateEx: node.DLib.func(
+                        //     'AsstCreateEx',
+                        //     AsstPtrType,
+                        //     ['pointer', CustomArgsType],
+                        // ),
 
-                        AsstDestroy: ffi.ForeignFunction(node.DLib.get('AsstDestroy'),
+                        AsstDestroy: node.DLib.func(
+                            'AsstDestroy',
                             VoidType,
                             [AsstPtrType],
-                            ffi.FFI_STDCALL),
+                        ),
 
-                        AsstSetInstanceOption: ffi.ForeignFunction(node.DLib.get('AsstSetInstanceOption'),
+                        AsstSetInstanceOption: node.DLib.func(
+                            'AsstSetInstanceOption',
                             BoolType,
                             [AsstPtrType, IntType, StringType],
-                            ffi.FFI_STDCALL),
+                        ),
 
-                        AsstConnect: ffi.ForeignFunction(node.DLib.get('AsstConnect'),
+                        AsstConnect: node.DLib.func(
+                            'AsstConnect',
                             BoolType,
                             [AsstPtrType, StringType, StringType, StringType],
-                            ffi.FFI_STDCALL),
+                        ),
 
-                        AsstAppendTask: ffi.ForeignFunction(node.DLib.get('AsstAppendTask'),
+                        AsstAppendTask: node.DLib.func(
+                            'AsstAppendTask',
                             IntType,
                             [AsstPtrType, StringType, StringType],
-                            ffi.FFI_STDCALL),
+                        ),
 
-                        AsstSetTaskParams: ffi.ForeignFunction(node.DLib.get('AsstSetTaskParams'),
+                        AsstSetTaskParams: node.DLib.func(
+                            'AsstSetTaskParams',
                             BoolType,
                             [AsstPtrType, IntType, StringType],
-                            ffi.FFI_STDCALL),
+                        ),
 
-                        AsstStart: ffi.ForeignFunction(node.DLib.get('AsstStart'),
+                        AsstStart: node.DLib.func(
+                            'AsstStart',
                             BoolType,
                             [AsstPtrType],
-                            ffi.FFI_STDCALL),
+                        ),
 
-                        AsstStop: ffi.ForeignFunction(node.DLib.get('AsstStop'),
+                        AsstStop: node.DLib.func(
+                            'AsstStop',
                             BoolType,
                             [AsstPtrType],
-                            ffi.FFI_STDCALL),
+                        ),
 
-                        AsstRunning: ffi.ForeignFunction(node.DLib.get('AsstRunning'),
+                        AsstRunning: node.DLib.func(
+                            'AsstRunning',
                             BoolType,
                             [AsstPtrType],
-                            ffi.FFI_STDCALL),
+                        ),
 
-                        AsstAsyncConnect: ffi.ForeignFunction(node.DLib.get('AsstAsyncConnect'),
+                        AsstAsyncConnect: node.DLib.func(
+                            'AsstAsyncConnect',
                             AsstAsyncCallIdType,
                             [AsstPtrType, StringType, StringType, StringType, BoolType],
-                            ffi.FFI_STDCALL),
+                        ),
 
-                        AsstAsyncClick: ffi.ForeignFunction(node.DLib.get('AsstAsyncClick'),
+                        AsstAsyncClick: node.DLib.func(
+                            'AsstAsyncClick',
                             AsstAsyncCallIdType,
                             [AsstPtrType, IntType, IntType, BoolType],
-                            ffi.FFI_STDCALL),
+                        ),
 
-                        AsstAsyncScreenCap: ffi.ForeignFunction(node.DLib.get('AsstAsyncScreencap'),
+                        AsstAsyncScreenCap: node.DLib.func(
+                            'AsstAsyncScreencap',
                             AsstAsyncCallIdType,
                             [AsstPtrType, BoolType],
-                            ffi.FFI_STDCALL),
+                        ),
 
-                        AsstGetImage: ffi.ForeignFunction(node.DLib.get('AsstGetImage'),
+                        AsstGetImage: node.DLib.func(
+                            'AsstGetImage',
                             ULLType,
                             [AsstPtrType, Buff, ULLType],
-                            ffi.FFI_STDCALL),
+                        ),
 
-                        AsstGetUUID: ffi.ForeignFunction(node.DLib.get('AsstGetUUID'),
+                        AsstGetUUID: node.DLib.func(
+                            'AsstGetUUID',
                             ULLType,
                             [AsstPtrType, StringType, ULLType],
-                            ffi.FFI_STDCALL),
+                        ),
 
-                        AsstGetTasksList: ffi.ForeignFunction(node.DLib.get('AsstGetTasksList'),
+                        AsstGetTasksList: node.DLib.func(
+                            'AsstGetTasksList',
                             ULLType,
                             [AsstPtrType, IntPointerType, ULLType],
-                            ffi.FFI_STDCALL),
+                        ),
 
-                        AsstGetNullSize: ffi.ForeignFunction(node.DLib.get('AsstGetNullSize'),
+                        AsstGetNullSize: node.DLib.func(
+                            'AsstGetNullSize',
                             ULLType,
                             [],
-                            ffi.FFI_STDCALL),
+                        ),
 
-                        AsstGetVersion: ffi.ForeignFunction(node.DLib.get('AsstGetVersion'),
+                        AsstGetVersion: node.DLib.func(
+                            'AsstGetVersion',
                             StringType,
-                            [],
-                            ffi.FFI_STDCALL),
+                            []
+                        ),
 
-                        AsstLog: ffi.ForeignFunction(node.DLib.get('AsstLog'),
+                        AsstLog: node.DLib.func(
+                            'AsstLog',
                             VoidType,
                             [StringType, StringType],
-                            ffi.FFI_STDCALL)
+                        )
                     }
                 }
+                // 更新节点状态为loaded
                 node.loading = false;
                 node.loaded = true;
                 if (await stateCheck()) {
@@ -207,22 +207,23 @@ module.exports = function (RED) {
                     }
                 } else {
                     node.error("maaCore load failed")
-                    node.status({fill: "red", shape: "ring", text: RED._("maaCore.status.badping")});
+                    node.status({fill: "red", shape: "ring", text: RED._("maaCore.status.loadFailed")});
                     node.tick = setTimeout(load, reload)
                 }
             } catch (err) {
                 node.error(err)
-                node.status({fill: "red", shape: "ring", text: RED._("maaCore.status.badping")});
-                // node.dispose()
+                node.status({fill: "red", shape: "ring", text: RED._("maaCore.status.loadFailed")});
             }
         }
 
+        // 节点初始化
         node.load = function () {
             if (!node.loaded && !node.loading) {
                 load();
             }
         }
 
+        // 节点关闭
         node.on('close', function (done) {
             if (node.tick) {
                 clearTimeout(node.tick);
@@ -244,7 +245,7 @@ module.exports = function (RED) {
         });
 
         /**
-         * 一个异步调用
+         * 异步调用的状态检查
          * @returns {Promise<unknown>}
          */
         async function stateCheck() {
@@ -263,8 +264,8 @@ module.exports = function (RED) {
 
         /**
          * 指定资源路径
-         * @param path? 未指定就用libPath
-         * @returns
+         * @param path 未指定就用libPath
+         * @returns String 加载成功的信息
          */
         node.LoadResource = function (path) {
             if (!existsSync(path)) {
@@ -275,32 +276,14 @@ module.exports = function (RED) {
 
         /**
          * 创建普通实例, 即无回调版
-         * @returns 实例指针{ref.Pointer}
+         * @param uuid ip加端口加密后的字符串
+         * @returns boolean
          */
         node.Create = function (uuid) {
             // node.MeoAsstPtr.placeholder = node.MeoAsstLib.AsstCreate()
             // return !!node.MeoAsstPtr.placeholder
             if (!node.MeoAsstPtr[uuid]) {
                 node.MeoAsstPtr[uuid] = node.MeoAsstLib.AsstCreate()
-                return true
-            }
-            return false
-        }
-
-        /**
-         * @description 创建实例
-         * @param uuid 设备唯一标识符
-         * @param callback 回调函数
-         * @param customArg 自定义参数{???}
-         * @returns  是否创建成功
-         */
-        node.CreateEx = function (
-            uuid,
-            callback = callbackHandle,
-            customArg = createVoidPointer()
-        ) {
-            if (!node.MeoAsstPtr[uuid]) {
-                node.MeoAsstPtr[uuid] = node.MeoAsstLib.AsstCreateEx(callback, customArg)
                 return true
             }
             return false
@@ -313,7 +296,7 @@ module.exports = function (RED) {
         //  * @param customArg 自定义参数{???}
         //  * @returns  是否创建成功
         //  */
-        // function CreateEx(
+        // node.CreateEx = function (
         //     uuid,
         //     callback = callbackHandle,
         //     customArg = createVoidPointer()
@@ -322,7 +305,7 @@ module.exports = function (RED) {
         //         node.MeoAsstPtr[uuid] = node.MeoAsstLib.AsstCreateEx(callback, customArg)
         //         return true
         //     }
-        //     return false // 重复创建
+        //     return false
         // }
 
         /**
@@ -445,11 +428,13 @@ module.exports = function (RED) {
         }
 
         /**
-         * @description core版本
-         * @returns 版本
+         * @description Maa的版本信息
+         * @returns string
          */
         node.GetCoreVersion = function () {
-            if (!node.loaded) return null
+            if (!node.loaded) {
+                return '';
+            }
             return node.MeoAsstLib.AsstGetVersion()
         }
 
@@ -491,76 +476,78 @@ module.exports = function (RED) {
         }
     }
 
-    RED.nodes.registerType("maaCore", MaaNode, {
+    // 注册 maaCore 节点
+    RED.nodes.registerType("maaCore", MaaCore, {
         defaults: {
             maaPath: {value: ""},
             adbPath: {value: "", required: true}
-            // port: {value:"5555",required:true}
         }
-        // credentials: {
-        //     user: {type: "text"},
-        //     password: {type: "password"}
-        // }
     });
 
-    function MaaNodeIn(config) {
-        RED.nodes.createNode(this, config);
-        this.maaCore = config.maaCore;
-        this.maaCoreConfig = RED.nodes.getNode(this.maaCore);
-        // let instance =this.maaCoreConfig.MeoAsstLib
-        this.status({});
+    // maa节点
+    function Maa(config) {
+        // 在NodeRED中创建节点
+        const node = this;
+        RED.nodes.createNode(node, config);
+        // 加载配置节点maaCore
+        node.maaCore = RED.nodes.getNode(config.maaCore);
+        node.status({});
 
-        if (this.maaCoreConfig) {
-            this.maaCoreConfig.load();
-            let sha_sum = cryoto.createHash('sha1')
-            let node = this;
+        //
+        if (node.maaCore) {
+            node.maaCore.load();
             let busy = false;
             let status = {};
-            node.maaCoreConfig.on("state", function (info) {
+            node.maaCore.on("state", function (info) {
                 if (info === "loading") {
+                    // maaCore加载中，灰圈
                     node.status({fill: "grey", shape: "ring", text: info});
                 } else if (info === "loaded") {
+                    // maaCore已加载，绿点
                     node.status({fill: "green", shape: "dot", text: info});
                 } else {
+                    // maaCore加载失败，红圈
                     node.status({fill: "red", shape: "ring", text: info});
                 }
             });
 
+            // maa节点被输入时触发
             node.on("input", function (msg, send, done) {
                 send = send || function () {
                     node.send.apply(node, arguments)
                 };
-                if (node.maaCoreConfig.loaded) {
+                // 判断maaCore是否是已加载状态
+                if (node.maaCore.loaded) {
                     if (typeof msg.topic === 'string') {
                         console.log("action:", msg.topic);
                         switch (msg.topic) {
                             case "Version":
-                                msg.payload = node.maaCoreConfig.GetCoreVersion();
+                                msg.payload = node.maaCore.GetCoreVersion();
                                 send(msg);
                                 status = {fill: "green", shape: "dot", text: RED._("maa.status.ok")};
                                 break;
                             case "LoadResource":
                                 let maaPath = msg.payload.maaPath
-                                msg.payload = node.maaCoreConfig.LoadResource(maaPath)
+                                msg.payload = node.maaCore.LoadResource(maaPath)
                                 send(msg)
                                 status = {fill: "green", shape: "dot", text: RED._("maa.status.ok")};
                                 break;
                             case "Create":
-                                const uuid = sha_sum.update(msg.payload.address).digest('hex');
-                                const flag = node.maaCoreConfig.Create(uuid);
+                                const uuid = cryoto.SHA256(msg.payload.address);
+                                const flag = node.maaCore.Create(uuid);
                                 msg.payload = {"uuid": uuid, "flag": flag}
                                 send(msg)
                                 status = {fill: "green", shape: "dot", text: RED._("maa.status.ok")};
                                 break;
-                            case "CreateEx":
-                                const uuid1 = sha_sum.update(msg.payload.address).digest('hex');
-                                const flag1 = node.maaCoreConfig.CreateEx(uuid1);
-                                msg.payload = {"uuid": uuid1, "flag": flag1}
-                                send(msg)
-                                status = {fill: "green", shape: "dot", text: RED._("maa.status.ok")};
-                                break;
+                            // case "CreateEx":
+                            //     const uuid1 = sha_sum.update(msg.payload.address).digest('hex');
+                            //     const flag1 = node.maaCore.CreateEx(uuid1);
+                            //     msg.payload = {"uuid": uuid1, "flag": flag1}
+                            //     send(msg)
+                            //     status = {fill: "green", shape: "dot", text: RED._("maa.status.ok")};
+                            //     break;
                             case "Connect":
-                                msg.payload = node.maaCoreConfig.Connect(
+                                msg.payload = node.maaCore.Connect(
                                     msg.payload.uuid,
                                     msg.payload.adbPath,
                                     msg.payload.address,
@@ -570,7 +557,7 @@ module.exports = function (RED) {
                                 status = {fill: "green", shape: "dot", text: RED._("maa.status.ok")};
                                 break;
                             case "SetTouchMode":
-                                msg.payload = node.maaCoreConfig.SetTouchMode(
+                                msg.payload = node.maaCore.SetTouchMode(
                                     msg.payload.uuid,
                                     msg.payload.mode,
                                 );
@@ -579,7 +566,7 @@ module.exports = function (RED) {
                                 break;
                             case "AppendTask":
                                 const taskType = msg.payload.type;
-                                const taskId = node.maaCoreConfig.AppendTask(
+                                const taskId = node.maaCore.AppendTask(
                                     msg.payload.uuid,
                                     msg.payload.type,
                                     msg.payload.params
@@ -592,109 +579,62 @@ module.exports = function (RED) {
                                 status = {fill: "green", shape: "dot", text: RED._("maa.status.ok")};
                                 break;
                             case "Start":
-                                msg.payload = node.maaCoreConfig.Start(
+                                msg.payload = node.maaCore.Start(
                                     msg.payload.uuid
                                 );
                                 send(msg);
                                 status = {fill: "green", shape: "dot", text: RED._("maa.status.ok")};
                                 break;
                             case "Stop":
-                                msg.payload = node.maaCoreConfig.Stop(
+                                msg.payload = node.maaCore.Stop(
                                     msg.payload.uuid
                                 );
                                 send(msg);
 
                                 break;
                             case "Dispose":
-                                if (!node.maaCoreConfig.loaded) {
+                                if (!node.maaCore.loaded) {
                                     msg.payload = "core already dispose, ignore..."
                                     send(msg)
                                     status = {fill: "red", shape: "ring", text: RED._("maa.status.notconnected")};
                                     return
                                 }
-                                for (const uuid of Object.keys(node.maaCoreConfig.MeoAsstPtr)) {
-                                    node.maaCoreConfig.Stop(uuid)
-                                    node.maaCoreConfig.Destroy(uuid)
+                                for (const uuid of Object.keys(node.maaCore.MeoAsstPtr)) {
+                                    node.maaCore.Stop(uuid)
+                                    node.maaCore.Destroy(uuid)
                                 }
                                 try {
-                                    node.maaCoreConfig.DLib.close()
+                                    node.maaCore.DLib.close()
                                 } catch (e) {
                                 }
-                                for (const dep of node.maaCoreConfig.DepLibs) {
+                                for (const dep of node.maaCore.DepLibs) {
                                     dep.close()
                                 }
-                                node.maaCoreConfig.loaded = false
+                                node.maaCore.loaded = false
                                 msg.payload = "core has been disposed"
                                 send(msg)
                                 status = {fill: "green", shape: "dot", text: RED._("maa.status.ok")};
                                 break;
                             default:
-                                msg.payload = "This method does not exist"
+                                msg.payload = RED._("maa.error.notMethod");
                                 send(msg)
-                                status = {fill: "red", shape: "ring", text: RED._("maa.status.notconnected")};
+                                status = {fill: "red", shape: "ring", text: RED._("maa.status.error")};
                                 break;
                         }
                         node.status(status);
-                        // node.maaCoreConfig.pool.getConnection(function (err, conn) {
-                        //     if (err) {
-                        //         if (conn) {
-                        //             conn.release()
-                        //         }
-                        //         status = {
-                        //             fill: "red",
-                        //             shape: "ring",
-                        //             text: RED._("maa.status.error") + ": " + err.code
-                        //         };
-                        //         node.status(status);
-                        //         node.error(err, msg);
-                        //         if (done) {
-                        //             done();
-                        //         }
-                        //         return
-                        //     }
-                        //
-                        //     var bind = [];
-                        //     if (Array.isArray(msg.payload)) {
-                        //         bind = msg.payload;
-                        //     } else if (typeof msg.payload === 'object' && msg.payload !== null) {
-                        //         bind = msg.payload;
-                        //     }
-                        //     conn.config.queryFormat = Array.isArray(msg.payload) ? null : customQueryFormat
-                        //     conn.query(msg.topic, bind, function (err, rows) {
-                        //         conn.release()
-                        //         if (err) {
-                        //             status = {
-                        //                 fill: "red",
-                        //                 shape: "ring",
-                        //                 text: RED._("maa.status.error") + ": " + err.code
-                        //             };
-                        //             node.status(status);
-                        //             node.error(err, msg);
-                        //         } else {
-                        //             msg.payload = rows;
-                        //             send(msg);
-                        //             status = {fill: "green", shape: "dot", text: RED._("maa.status.ok")};
-                        //             node.status(status);
-                        //         }
-                        //         if (done) {
-                        //             done();
-                        //         }
-                        //     });
-                        // })
-
                     } else {
-                        if (typeof msg.topic !== 'string') {
-                            node.error("msg.topic : " + RED._("maa.errors.notstring"));
-                            done();
-                        }
+                        node.error("msg.topic : " + RED._("maa.errors.notString"));
+                        done();
                     }
                 } else {
-                    node.error(RED._("maa.errors.notconnected"), msg);
-                    status = {fill: "red", shape: "ring", text: RED._("maa.status.notconnected")};
+                    node.error(RED._("maa.errors.notLoaded"), msg);
+                    status = {fill: "red", shape: "ring", text: RED._("maa.status.notLoaded")};
                     if (done) {
                         done();
                     }
                 }
+
+                // 将maa节点的状态更新到画布
                 if (!busy) {
                     busy = true;
                     node.status(status);
@@ -705,19 +645,19 @@ module.exports = function (RED) {
                 }
             });
 
+            // maa节点被关闭时触发
             node.on('close', function () {
                 if (node.tout) {
                     clearTimeout(node.tout);
                 }
-                node.maaCoreConfig.removeAllListeners();
+                node.maaCore.removeAllListeners();
                 node.status({});
             });
         } else {
-            this.error(RED._("maa.errors.notconfigured"));
+            node.error(RED._("maa.errors.notConfigured"));
         }
     }
 
-    RED.nodes.registerType("maa", MaaNodeIn);
-
-
+    // 注册 Maa 节点
+    RED.nodes.registerType("maa", Maa);
 }

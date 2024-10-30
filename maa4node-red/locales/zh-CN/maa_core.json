@@ -6,16 +6,16 @@
       "adbPath": "Adb路径"
     },
     "status": {
-      "badping": "Bad Ping",
+      "loadFailed": "MaaCore加载失败",
       "error": "Error",
-      "ok": "OK",
-      "notconnected": "not yet connected"
+      "ok": "OK"
     },
     "errors": {
-      "notstring": "the query is not defined as a string",
-      "notconnected": "Database not connected",
-      "notconfigured": "MySQL database not configured"
+      "notMethod": "Topic声明的方法不存在",
+      "notString": "Topic未定义为字符串",
+      "notLoaded": "MaaCore未加载",
+      "notConfigured": "MaaCore未配置"
     },
-    "tip": "Tip: 如果在容器化方式运行，路径一定要填容器内的路径"
+    "tip": "Tip: NodeRed以容器化方式运行时，MaaCore中配置的路径应当为容器内的路径"
   }
 }
